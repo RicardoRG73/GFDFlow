@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
-from .utils import get_support_nodes, compute_normal_vectors
+from .utils import get_support_nodes, compute_normal_vectors, normal_vector_in_node
 
 class GFDMI_2D_problem:
     """
@@ -74,6 +74,7 @@ class GFDMI_2D_problem:
         self.neumann_boundaries: Dict[str, List] = {}
         self.dirichlet_boundaries: Dict[str, List] = {}
         self.interfaces: Dict[str, List] = {}
+        self.intersections: Dict[str, List] = {}
 
     @staticmethod
     def _support_nodes(node_idx: int, triangles: npt.NDArray[np.int_], min_support: int = 5, max_iter: int = 2) -> npt.NDArray[np.int_]:
@@ -100,6 +101,24 @@ class GFDMI_2D_problem:
         """
         return get_support_nodes(node, self.triangles, min_support_nodes, max_iter)
 
+    def normal_vector_in_node(self, node: int, boundary_nodes: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
+        """
+        Public method to get the normal vector at a given node.
+        
+        Parameters
+        ----------
+        node : int
+            Index of the central node.
+        boundary_nodes : npt.NDArray[np.int_]
+            Indices of the boundary nodes.
+            
+        Returns
+        -------
+        npt.NDArray[np.float64]
+            Normal vector at the given node.
+        """
+        return normal_vector_in_node(node, boundary_nodes, self.coords)
+    
     def normal_vectors(self, boundary_nodes: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
         """
         Computes normal vectors at boundary nodes.
@@ -147,6 +166,20 @@ class GFDMI_2D_problem:
             k_left, k_right, nodes_left, nodes_right, beta, alpha, interior_left, interior_right
         ]
 
+    def intersection(
+        self,
+        label: str,
+        intersection_node: int,
+        interface_left: str,
+        interface_right: str,
+        material_between: str,
+        f_intersection: Callable[[npt.NDArray[np.float64]], float]
+    ) -> None:
+        """Defines intersection between two interfaces."""
+        self.intersections[label] = [
+            intersection_node, interface_left, interface_right, material_between, f_intersection
+        ]
+
     def _assemble_point_discretization(self, i: int, k_val: float, operator: npt.NDArray[np.float64], 
                                        support_indices: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
         """Calculates the Gamma stencil for a node."""
@@ -191,9 +224,9 @@ class GFDMI_2D_problem:
         # Looking at original code: L[3] *= 2 and L[5] *= 2.
         # This means D and F correspond to x^2 and y^2 which should be divided by 2 in stencil calc if L is original.
         # Actually, if we multiply L[3] and L[5] by 2, we are compensating for the x^2/2 and y^2/2 in Taylor.
-        current_L = self.L.copy()
-        current_L[3] *= 2
-        current_L[5] *= 2
+        L = self.L
+        L[3] *= 2
+        L[5] *= 2
 
         # 1. Identify interior nodes (exclude those in Neumann boundaries)
         neumann_n = np.array([], dtype=int)
@@ -205,7 +238,7 @@ class GFDMI_2D_problem:
             interior = np.setdiff1d(nodes, neumann_n)
             for i in interior:
                 I = self.support_nodes(i)
-                Gamma = self._assemble_point_discretization(i, k_fn(self.coords[i]), current_L, I)
+                Gamma = self._assemble_point_discretization(i, k_fn(self.coords[i]), L, I)
                 K[i, I] = Gamma
                 F[i] = self.source(self.coords[i])
 
@@ -232,7 +265,7 @@ class GFDMI_2D_problem:
                 M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
                 M_pinv = np.linalg.pinv(M_aug)
                 
-                Gamma_full = M_pinv @ (k_val * current_L)
+                Gamma_full = M_pinv @ (k_val * L)
                 Gamma_ghost = Gamma_full[0]
                 Gamma_nodes = Gamma_full[1:]
                 
@@ -267,7 +300,7 @@ class GFDMI_2D_problem:
                     M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
                     M_pinv = np.linalg.pinv(M_aug)
                     
-                    G_full = M_pinv @ (k0_val * current_L)
+                    G_full = M_pinv @ (k0_val * L)
                     Gn_full = M_pinv @ (k0_val * np.array([0, ni[0], ni[1], 0, 0, 0]))
                     
                     Gg = G_full[0] / Gn_full[0]
@@ -290,7 +323,7 @@ class GFDMI_2D_problem:
                     M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
                     M_pinv = np.linalg.pinv(M_aug)
                     
-                    G_full = M_pinv @ (k1_val * current_L)
+                    G_full = M_pinv @ (k1_val * L)
                     Gn_full = M_pinv @ (k1_val * np.array([0, ni[0], ni[1], 0, 0, 0]))
                     
                     Gg = G_full[0] / Gn_full[0]
@@ -328,7 +361,7 @@ class GFDMI_2D_problem:
                     M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
                     M_pinv = np.linalg.pinv(M_aug)
                     
-                    G_full = M_pinv @ (k0_val * current_L)
+                    G_full = M_pinv @ (k0_val * L)
                     Gn_full = M_pinv @ (k0_val * np.array([0, ni[0], ni[1], 0, 0, 0]))
                     
                     Gg = G_full[0] / Gn_full[0]
@@ -351,14 +384,54 @@ class GFDMI_2D_problem:
                     M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
                     M_pinv = np.linalg.pinv(M_aug)
                     
-                    G_full = M_pinv @ (k1_val * current_L)
+                    G_full = M_pinv @ (k1_val * L)
                     Gn_full = M_pinv @ (k1_val * np.array([0, ni[0], ni[1], 0, 0, 0]))
                     
                     Gg = G_full[0] / Gn_full[0]
-                    K[i, I1] += G_full[1:] - Gg * Gn_full[1:]
+                    K[i, I1] = K[i,I1].toarray() + (G_full[1:] - Gg * Gn_full[1:])
                     F[i] += self.source(self.coords[i]) - Gg * beta(self.coords[i])
 
-        # 5. Dirichlet boundary assembly
+        # 5. Interface intersection assembly
+        for center_node, b_left, b_right, mat_between, beta_center in self.intersections.values():
+            if continuous:
+                k = self.materials[mat_between][1]
+                # interface nodes
+                left_nodes = self.interfaces[b_left][2]
+                right_nodes = self.interfaces[b_right][2]
+                l_r_nodes = np.union1d(left_nodes, right_nodes)
+                # material nodes
+                mat_nodes = self.materials[mat_between][1]     # nodes
+                k_func =  self.materials[mat_between][0]  # source
+                ki = k_func(self.coords[center_node])
+                
+                # support nodes and normal vec at center_node
+                all_nodes = np.union1d(l_r_nodes, mat_nodes)
+                all_nodes = np.union1d(all_nodes, [center_node])
+                support_nodes = self.support_nodes(center_node)
+                support_nodes = np.intersect1d(support_nodes, all_nodes)
+                n_center = self.normal_vector_in_node(center_node, l_r_nodes)
+                # GFDM weights
+                deltasx = self.coords[support_nodes, 0] - self.coords[center_node, 0]
+                deltasy = self.coords[support_nodes, 1] - self.coords[center_node, 1]
+                mean_h = np.mean(np.sqrt(deltasx[1:]**2 + deltasy[1:]**2)) if len(support_nodes) > 1 else 0.1
+                gx, gy = n_center * mean_h
+                
+                aug_dx = np.insert(deltasx, 0, gx)
+                aug_dy = np.insert(deltasy, 0, gy)
+                M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
+                M_pinv = np.linalg.pinv(M_aug)
+                
+                G_full = M_pinv @ (ki * L)
+                Gn_full = M_pinv @ (ki * np.array([0, n_center[0], n_center[1], 0, 0, 0]))
+                
+                Gg = G_full[0] / Gn_full[0]
+                K[center_node, support_nodes] = K[center_node, support_nodes].toarray() + (G_full[1:] - Gg * Gn_full[1:])
+                F[center_node] += self.source(self.coords[center_node]) - Gg * beta_center(self.coords[center_node])
+                
+            else:
+                pass
+            
+        # 6. Dirichlet boundary assembly
         for b_nodes, u_fn in self.dirichlet_boundaries.values():
             for i in b_nodes:
                 K[i, :] = 0

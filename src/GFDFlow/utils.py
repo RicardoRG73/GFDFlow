@@ -110,3 +110,44 @@ def compute_normal_vectors(
                     normal_vecs[i] = ni
     
     return normal_vecs
+    
+def normal_vector_in_node(node_idx: int, boundary_nodes: npt.NDArray[np.int_], coords: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """
+    Computes the normal vector at a given node using boundary nodes around it.
+
+    Parameters
+    ----------
+    node_idx : int
+        Index of the central node.
+    boundary_nodes : npt.NDArray[np.int_]
+        Indices of the boundary nodes.
+    coords : npt.NDArray[np.float64]
+        Array with shape (n, 2) containing the coordinates of the n nodes.
+
+    Returns
+    -------
+    npt.NDArray[np.float64]
+        The normal vector at the given node.
+    """
+    
+    tol = 1e-4
+    p0 = coords[node_idx]
+    p1 = coords[boundary_nodes[0]]
+    p2 = coords[boundary_nodes[1]]
+    v = p1 - p0
+    v = v / np.linalg.norm(v)
+    w = p2 - p0
+    w = w / np.linalg.norm(w)
+    line = np.dot(v, w) > (1 - tol)
+    if line:
+        clockwise_rotation = np.array([[0, 1], [-1, 0]])
+        ni = clockwise_rotation @ v
+    else:
+        pm = np.mean(coords[boundary_nodes])
+        ni = coords[node_idx] - pm
+        ni = ni / np.linalg.norm(ni)
+
+    return ni
+    
+    
+
