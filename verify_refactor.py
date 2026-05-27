@@ -6,7 +6,7 @@ import os
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), 'src'))
 
-from gfdm_interfaces.GFDMI import GFDMI_2D_problem
+from GFDFlow.GFDM import GFDMI_2D_problem
 
 def test_initialization():
     print("Testing initialization...")
