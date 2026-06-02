@@ -1,9 +1,12 @@
 """
-Solution to the Poisson equation
+Solution to the Poisson equation:
 \nabla^2 u = f
-in the square domain: `x in [0,2]` and `y in [0,2]`
-using 3 different materials
-and 3 interfaces
+
+in the square domain: x in [-1,1] and y in [-1,1]
+
+Implementing 3 different materials
+with 3 interfaces passing through the center node
+(coordinates (0,0) and index 5)
 """
 
 
@@ -157,9 +160,9 @@ problem.interface("interf2", k1, k2, interf2_nodes, None, fi_intersc, None, mat1
 
 center_node = 5
 #                   [center_node, interface1, interface2, material_between, source_center]
-problem.intersection("interf0", center_node, "interf0", "interf1", "mat0", fi_intersc)
-problem.intersection("interf1", center_node, "interf1", "interf2", "mat1", fi_intersc)
-problem.intersection("interf2", center_node, "interf2", "interf0", "mat2", fi_intersc)
+problem.intersection("intersection1", center_node, "interf0", "interf1", "mat0", fi_intersc)
+problem.intersection("intersection2", center_node, "interf1", "interf2", "mat1", fi_intersc)
+problem.intersection("intersection3", center_node, "interf2", "interf0", "mat2", fi_intersc)
 
 # ====
 # Solution

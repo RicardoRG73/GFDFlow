@@ -1,3 +1,4 @@
+
 import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
@@ -149,5 +150,91 @@ def normal_vector_in_node(node_idx: int, boundary_nodes: npt.NDArray[np.int_], c
 
     return ni
     
+def GfdmTransientStepPicard(p, t, L, f, mat_pr, dir_pr, neu_pr, intrf_pr, intrf_intersc, 
+                            u_prev, dt, u0=None, tol=1e-3, max_iter=20, double_nodes=False, is_hydraulic_head=True, omega=0.5):
+    """
+    Solves one time step for the transient Richards equation.
     
+    Parameters
+    -----
+    u_prev : ndarray
+        Solution at the previous time step.
+    dt : float
+        Time step size.
+    u0 : ndarray, optional
+        Initial guess for the current time step (if None, uses u_prev).
+    """
+    from .GFDM import VanGenuchten
+    N = p.shape[0]
+    if u0 is None:
+        u = u_prev.copy()
+    else:
+        u = u0.copy()
+
+    node_to_idx = {tuple(pos): i for i, pos in enumerate(p)}
+    
+    # Identify Dirichlet nodes
+    dir_nodes = []
+    for key in dir_pr:
+        dir_nodes.extend(dir_pr[key][0])
+    dir_nodes = set(dir_nodes)
+
+    for it in range(max_iter):
+        print(f"  Picard Iteration {it+1}/{max_iter}")
+        
+        curr_mat_pr = {}
+        curr_C = np.zeros(N)
+        
+        for key in mat_pr:
+            nodes, k_obj = mat_pr[key]
+            if isinstance(k_obj, VanGenuchten):
+                # We use a closure to capture current solution 'u' and node mapping
+                def mk_k(k_static, u_curr, mapping, is_H):
+                    if is_H:
+                        return lambda pos: k_static.K(u_curr[mapping[tuple(pos)]] - pos[1])
+                    else:
+                        return lambda pos: k_static.K(u_curr[mapping[tuple(pos)]])
+                curr_mat_pr[key] = [nodes, mk_k(k_obj, u, node_to_idx, is_hydraulic_head)]
+                
+                # Compute C(h) for these nodes
+                for idx in nodes:
+                    pos = p[idx]
+                    h = u[idx] - pos[1] if is_hydraulic_head else u[idx]
+                    curr_C[idx] = k_obj.C(h)
+            else:
+                curr_mat_pr[key] = [nodes, k_obj]
+                
+        K_new, F_new = GfdmInterf(p, t, L, f, curr_mat_pr, dir_pr, neu_pr, intrf_pr, intrf_intersc, double_nodes=double_nodes)
+        
+        # Add transient terms for Non-Dirichlet nodes
+        for i in range(N):
+            if i not in dir_nodes:
+                c_val = curr_C[i]
+                K_new[i, i] -= c_val / dt
+                F_new[i] -= (c_val / dt) * u_prev[i]
+        
+        try:
+            u_next = np.linalg.solve(K_new, F_new)
+        except np.linalg.LinAlgError:
+            print("  Singular matrix in Picard iteration. Attempting pseudo-inverse.")
+            u_next = np.linalg.pinv(K_new) @ F_new
+            
+        u_next = omega * u_next + (1 - omega) * u
+        # Strictly enforce Dirichlet boundary conditions on the under-relaxed solution
+        for key in dir_pr:
+            nodes, fd = dir_pr[key]
+            for idx in nodes:
+                u_next[idx] = fd(p[idx])
+            
+        err = np.linalg.norm(u_next - u) / (np.linalg.norm(u_next) + 1e-10)
+        print(f"  Error: {err:.2e}")
+        
+        u = u_next.copy()
+        
+        if err < tol:
+            print(f"  Picard converged in {it+1} iterations.")
+            return u
+            
+    print("  Picard did not converge.")
+    return u    
 
