@@ -11,7 +11,7 @@ plt.style.use(["seaborn-v0_8-darkgrid", "seaborn-v0_8-colorblind", "seaborn-v0_8
 plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["legend.framealpha"] = 0.1
-mapa_de_color = "plasma"
+color_map = "inferno"
 
 import calfem.geometry as cfg
 import calfem.mesh as cfm
@@ -62,7 +62,7 @@ mesh = cfm.GmshMesh(geometria)
 
 mesh.el_type = 2                            # type of element: 2 = triangle
 mesh.dofs_per_node = 1
-mesh.el_size_factor = 0.1
+mesh.el_size_factor = 0.03
 
 coords, edof, dofs, bdofs, elementmarkers = mesh.create()   # create the geometry
 verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
@@ -139,7 +139,7 @@ Psib = lambda p: 0
 Psil = lambda p: 0
 Psir = lambda p: 0
 
-L2 = np.array([0,0,0,2,0,2])
+L2 = np.array([0,0,0,1,0,1])
 
 problem = gfdmi(coords, faces, L2, source)
 
@@ -279,62 +279,28 @@ U0 = np.hstack((Psi0, C0))
 # IVP solution
 t_final = 0.21
 tspan = [0, t_final]
-sol = solve_ivp(fun, tspan, U0, method="RK45")
+t_eval = [0, 0.02, 0.05, 0.114, 0.15, 0.21]
+sol = solve_ivp(fun, tspan, U0, t_eval=t_eval, method="LSODA")
 
 U = sol.y
 
 #%%
 # -- Solution plot at different times --
-levelsP = 20
-levelsC = 20
+for i in range(len(t_eval)):
+    fig, axes = plt.subplots(2, 1, sharex="col", sharey="row", figsize=(4,5))
 
-fig, axes = plt.subplots(4, 2, sharex="col", sharey="row", figsize=(4,5))
+    ax1 = axes[0]
+    ax2 = axes[1]
 
-ax1 = axes[0,0]
-ax2 = axes[0,1]
-ax3 = axes[1,0]
-ax4 = axes[1,1]
-ax5 = axes[2,0]
-ax6 = axes[2,1]
-ax7 = axes[3,0]
-ax8 = axes[3,1]
+    ax1.tricontourf(coords[:,0], coords[:,1], U[:N,i], cmap=color_map, levels=20)
+    ax1.set_title(f"$\Psi$ at $t={sol.t[i]:1.4f}$")
+    ax1.set_aspect("equal")
 
-ax1.set_aspect("equal", "box")
-ax2.set_aspect("equal", "box")
-ax3.set_aspect("equal", "box")
-ax4.set_aspect("equal", "box")
-ax5.set_aspect("equal", "box")
-ax6.set_aspect("equal", "box")
-ax7.set_aspect("equal", "box")
-ax8.set_aspect("equal", "box")
+    ax2.tricontourf(coords[:,0], coords[:,1], U[N:,i], cmap=color_map, levels=20)
+    ax2.set_title(f"$C$ at $t={sol.t[i]:1.4f}$")
+    ax2.set_aspect("equal")
 
-Nt = sol.t.shape[0]
+    fig.suptitle(f"Solution with $N={coords.shape[0]}$, at $t={sol.t[i]:1.4f}$")
 
-ax1.tricontourf(coords[:,0], coords[:,1], U[:N,0], cmap=mapa_de_color, levels=levelsP)
-ax1.set_title(r"$\Psi$ at $t=%1.3f" %sol.t[0] + "$")
-
-ax2.tricontourf(coords[:,0], coords[:,1], U[N:,0], cmap=mapa_de_color, levels=levelsC)
-ax2.set_title(r"$C$ at $t=%1.3f" %sol.t[0] + "$")
-
-ax3.tricontourf(coords[:,0], coords[:,1], U[:N,Nt//3], cmap=mapa_de_color, levels=levelsP)
-ax3.set_title(r"$\Psi$ at $t=%1.3f" %sol.t[Nt//3] + "$")
-
-ax4.tricontourf(coords[:,0], coords[:,1], U[N:,Nt//3], cmap=mapa_de_color, levels=levelsC)
-ax4.set_title(r"$C$ at $t=%1.3f" %sol.t[Nt//3] + "$")
-
-ax5.tricontourf(coords[:,0], coords[:,1], U[:N,Nt*2//3], cmap=mapa_de_color, levels=levelsP)
-ax5.set_title(r"$\Psi$ at $t=%1.3f" %sol.t[Nt*2//3] + "$")
-
-ax6.tricontourf(coords[:,0], coords[:,1], U[N:,Nt*2//3], cmap=mapa_de_color, levels=levelsC)
-ax6.set_title(r"$C$ at $t=%1.3f" %sol.t[Nt*2//3] + "$")
-
-ax7.tricontourf(coords[:,0], coords[:,1], U[:N,-1], cmap=mapa_de_color, levels=levelsP)
-ax7.set_title(r"$\Psi$ at $t=%1.3f" %sol.t[-1] + "$")
-
-ax8.tricontourf(coords[:,0], coords[:,1], U[N:,-1], cmap=mapa_de_color, levels=levelsC)
-ax8.set_title(r"$C$ at $t=%1.3f" %sol.t[-1] + "$")
-
-fig.suptitle(r"Solution with $N=%d" %coords.shape[0] +"$")
-
-plt.savefig("figures/ex6Henry.png", dpi=300, bbox_inches="tight")
-# plt.show()
+    plt.savefig(f"figures/ex6Henry_{sol.t[i]:1.4f}.png", dpi=300, bbox_inches="tight")
+plt.show()

@@ -26,8 +26,8 @@ g = cfg.Geometry()
 g.point([0, 0])
 g.point([4, 0])
 g.point([4, 1])
-g.point([3, 1], el_size=0.5)
-g.point([1, 1], el_size=0.5)
+g.point([3, 1], el_size=0.3)
+g.point([1, 1], el_size=0.3)
 g.point([0, 1])
 
 # lines
@@ -63,6 +63,8 @@ verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
     mesh.el_type
 )
 
+print(f"Number of nodes N={coords.shape[0]}")
+
 plt.figure(figsize=(8,3))
 cfv.draw_mesh(
     coords=coords,
@@ -91,8 +93,8 @@ right_nodes = np.setdiff1d(right_nodes, bottom_nodes)
 left_nodes = np.setdiff1d(left_nodes, top_left_nodes)
 left_nodes = np.setdiff1d(left_nodes, bottom_nodes)
 
+# top middle nodes with condition C=1
 top_nodes = top_middle_nodes
-
 # right and top_right share same condition for C
 right_nodes = np.hstack((right_nodes, top_right_nodes))
 # left and top_left share same condition for C
@@ -170,10 +172,12 @@ L = np.array([0,0,0,1,0,1])
 source = lambda p: 0
 k = lambda p: 1
 
+C_top = 2
+
 problem = gfdm(coords, faces, L, source)
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("bottom", bottom_nodes, lambda p: 0)
-problem.dirichlet_boundary("top", top_nodes, lambda p: 1)
+problem.dirichlet_boundary("top", top_nodes, lambda p: C_top)
 problem.neumann_boundary("right", k, right_nodes, lambda p: 0)
 problem.neumann_boundary("left", k, left_nodes, lambda p: 0)
 
@@ -239,82 +243,100 @@ def rhs(t,U):
     return vec
 
 # -- solve IVP --
-tfinal = 0.2
+tfinal = 0.1
 tspan = [0, tfinal]
+t_eval = np.array([0, 0.005, 0.01, 0.02, 0.05, 0.075, 0.1])
 
 P0 = zeros_vec.copy()
 C0 = zeros_vec.copy()
 
-C0[top_nodes] = 1
+C0[top_nodes] = C_top
 
 U0 = np.hstack((P0,C0))
 
-sol = solve_ivp(rhs, tspan, U0)
+sol = solve_ivp(rhs, tspan, U0, t_eval=t_eval, method="LSODA")
 
 U = sol.y
 times = sol.t
 
 # -- plot results --
-from matplotlib.animation import FuncAnimation 
-fig = plt.figure()
+from matplotlib.animation import FuncAnimation
+for idx in range(len(times)):
+    fig = plt.figure(figsize=(8,8))
 
-ax1 = fig.add_subplot(2,1,1)
-ax2 = fig.add_subplot(2,1,2)
-
-index = sol.t.shape[0] - 1
-cont1 = ax1.tricontourf(
-    coords[:,0],
-    coords[:,1],
-    U[:N,index],
-    cmap="plasma",
-    levels=20
-)
-fig.colorbar(cont1)
-ax1.set_title(f"Psi, t = {sol.t[index]:.4f}")
-ax1.axis("equal")
-
-cont2 = ax2.tricontourf(
-    coords[:,0],
-    coords[:,1],
-    U[N:,index],
-    cmap="plasma",
-    levels=20
-)
-fig.colorbar(cont2)
-ax2.set_title(f"C, t = {sol.t[index]:.4f}")
-ax2.axis("equal")
-
-zlims = (-10, 10)
-def update(frame):
-    ax1.clear()
-    ax2.clear()
+    ax1 = fig.add_subplot(2,1,1)
+    ax2 = fig.add_subplot(2,1,2)
 
     cont1 = ax1.tricontourf(
         coords[:,0],
         coords[:,1],
-        U[:N,frame],
-        cmap="plasma",
+        U[:N,idx],
+        cmap="inferno",
         levels=20
     )
-    ax1.set_title(f"Psi, t = {sol.t[frame]:.4f}")
+    fig.colorbar(cont1, label=r"Stream Function $\Psi$")
+    ax1.set_title(f"$\Psi$, t = {sol.t[idx]:.4f}")
     ax1.axis("equal")
 
     cont2 = ax2.tricontourf(
         coords[:,0],
         coords[:,1],
-        U[N:,frame],
-        cmap="plasma",
+        U[N:,idx],
+        cmap="inferno",
         levels=20
     )
-    ax2.set_title(f"C, t = {sol.t[frame]:.4f}")
+    fig.colorbar(cont2, label="$C$")
+    ax2.set_title(f"$C$, t = {sol.t[idx]:.4f}")
     ax2.axis("equal")
 
-    return cont1, cont2
+    # def update(frame):
+    #     ax1.clear()
+    #     ax2.clear()
 
-ani = FuncAnimation(fig, update, frames=U.shape[1], blit=False, interval=10)
+    #     cont1 = ax1.tricontourf(
+    #         coords[:,0],
+    #         coords[:,1],
+    #         U[:N,frame],
+    #         cmap="inferno",
+    #         levels=20
+    #     )
+    #     ax1.set_title(f"$\Psi$, t = {sol.t[frame]:.4f}")
+    #     ax1.axis("equal")
 
-# optional: save gif
-#ani.save("figures/ex7Elder.gif", writer='imagemagick', fps=5)
+    #     cont2 = ax2.tricontourf(
+    #         coords[:,0],
+    #         coords[:,1],
+    #         U[N:,frame],
+    #         cmap="inferno",
+    #         levels=20
+    #     )
+    #     ax2.set_title(f"C, t = {sol.t[frame]:.4f}")
+    #     ax2.axis("equal")
 
-plt.savefig("figures/ex7Elder.png", dpi=300, bbox_inches="tight")
+    #     return cont1, cont2
+
+    # ani = FuncAnimation(fig, update, frames=U.shape[1], blit=False, interval=10)
+
+    # # optional: save gif
+    # ani.save("figures/ex7Elder.gif", writer='pillow', fps=5)
+
+    plt.savefig(f"figures/ex7Elder_{sol.t[idx]:1.3f}.png", dpi=300, bbox_inches="tight")
+
+
+
+fig = plt.figure(figsize=(8,3))
+
+cont = plt.tricontourf(
+    coords[:,0],
+    coords[:,1],
+    U[N:,2],
+    cmap="inferno",
+    levels=20
+)
+fig.colorbar(cont, label="$C$")
+plt.title(f"$C$, t = {sol.t[2]:.4f}")
+plt.axis("equal")
+plt.savefig(f"figures/elder-gfdflow.png", dpi=300, bbox_inches="tight")
+
 plt.show()
+

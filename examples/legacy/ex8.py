@@ -136,7 +136,7 @@ problem = gfdmi(coords, faces, L, source)
 
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("left", left_nodes, lambda p: 50)
-problem.dirichlet_boundary("right", right_nodes, lambda p: 35)
+problem.dirichlet_boundary("right", right_nodes, lambda p: 30)
 problem.neumann_boundary("neumann", k, neumann_nodes, neumann_condition)
 
 K, F = problem.continuous_discretization()
@@ -145,17 +145,16 @@ import scipy.sparse as sp
 U = sp.linalg.spsolve(K, F)
 
 # Plot solution
-plt.figure(figsize=(8,3))
+plt.figure(figsize=(10,4))
 plt.tricontourf(
     coords[:,0],
     coords[:,1],
     U,
     levels=25,
-    cmap="plasma"
+    cmap="inferno"
 )
 plt.axis("equal")
-plt.colorbar(label="total head")
-plt.title("Steady State Solution")
+plt.colorbar(label="h")
 plt.tricontour(
     coords[:,0],
     coords[:,1],
@@ -167,32 +166,33 @@ plt.tricontour(
     alpha=0.5
 )
 
-solid_nodes = np.array([3,4,5,6,7,8,9,10])
+# pile sheet region
+pile_sheet_nodes = np.array([3,4,5,6,7,8,9,10])
 plt.fill(
-    coords[solid_nodes,0],
-    coords[solid_nodes,1],
+    coords[pile_sheet_nodes,0],
+    coords[pile_sheet_nodes,1],
     color="gray"
 )
 
-# draging dam
-xs = np.array([
+# dam region
+xs_dam = np.array([
     30.        , 31.57894737, 33.15789474, 34.73684211, 36.31578947,
     37.89473684, 39.47368421, 41.05263158, 42.63157895, 44.21052632,
     45.78947368, 47.36842105, 48.94736842, 50.52631579, 52.10526316,
-    53.68421053, 55.26315789, 56.84210526, 58.42105263, 60.        , 30.
+    53.68421053, 55.26315789, 56.84210526, 58.42105263, 60.        , 60., 30.
 ])
-ys = np.array([
+ys_dam = np.array([
     45.        , 44.77443609, 44.54887218, 44.32330827, 44.09774436,
     43.27302632, 41.99013158, 40.70723684, 39.42434211, 38.14144737,
     37.34817814, 37.04453441, 36.74089069, 36.43724696, 36.13360324,
-    35.82995951, 35.52631579, 35.22267206, 33.94736842, 30.        , 30.
+    35.82995951, 35.52631579, 35.22267206, 33.94736842, 30.        , 29., 29
 ])
 
 plt.fill(
-    xs,
-    ys,
+    xs_dam,
+    ys_dam,
     color="gray"
 )
 
 plt.savefig("figures/ex8.png", dpi=300, bbox_inches="tight")
-# plt.show()
+plt.show()
