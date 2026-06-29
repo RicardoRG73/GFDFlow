@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 """
 Laplace equation with sinusoidal interface, and jumps in `u` and `u_n`
 [Siraj-ul-Islam, Masood Ahmad]
@@ -233,5 +233,5 @@ print("Norm infinity = %1.4e" %ninf)
 print("===============")
 
 #%%
-plt.savefig("figures/ex2.png", dpi=300, bbox_inches="tight")
-# plt.show()
+# plt.savefig("figures/ex2.png", dpi=300, bbox_inches="tight")
+plt.show()

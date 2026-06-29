@@ -15,7 +15,7 @@ with 3 interfaces passing through the center node
 # =====
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
@@ -189,7 +189,7 @@ plt.tricontour(
     coords[:,0],
     coords[:,1],
     U,
-    triangles=faces,
+    faces,
     levels=25,
     colors="k",
     linewidths=1,

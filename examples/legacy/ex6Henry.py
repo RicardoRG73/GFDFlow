@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 #%%
 # -- libraries --
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi

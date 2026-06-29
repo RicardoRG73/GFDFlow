@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 import json
 import numpy as np
 import scipy.sparse as sp
@@ -89,6 +89,6 @@ ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("U")
 
-plt.savefig("figures/ex0.png", dpi=300, bbox_inches="tight")
+# plt.savefig("figures/ex0.png", dpi=300, bbox_inches="tight")
 
-# plt.show()
+plt.show()

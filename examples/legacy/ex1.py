@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 #%% Importing needed libraries
 import numpy as np
 import matplotlib.pyplot as plt
@@ -111,5 +111,5 @@ ax.set_ylabel("y")
 ax.set_zlabel("U")
 #plt.savefig("figures/ex1-3d.jpg", dpi=300)
 
-plt.savefig("figures/ex1.png", dpi=300, bbox_inches="tight")
-# plt.show()
+# plt.savefig("figures/ex1.png", dpi=300, bbox_inches="tight")
+plt.show()

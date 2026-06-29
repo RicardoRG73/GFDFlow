@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 #%%
 # =============================================================================
 # Importing needed libraries
@@ -195,5 +195,5 @@ plt.savefig("figures/ex3-3d.jpg", dpi=300)
 # condition number
 print("\n\n Condition number cond(K): %1.3e" %np.linalg.cond(K.toarray()))
 
-plt.savefig("figures/ex3.png", dpi=300, bbox_inches="tight")
-# plt.show()
+# plt.savefig("figures/ex3.png", dpi=300, bbox_inches="tight")
+plt.show()

@@ -13,9 +13,11 @@ stationary and non-stationary solutions
 # =====
 # Importing needed libraries
 # =====
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 import numpy as np
 import matplotlib.pyplot as plt
-
 import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
