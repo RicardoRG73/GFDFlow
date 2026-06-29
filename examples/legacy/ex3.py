@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 #%%
 # =============================================================================
 # Importing needed libraries
@@ -18,7 +15,7 @@ from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
 # loading mesh data
 import json
-with open("Meshes/mesh3.json","r") as f:
+with open("examples/legacy/Meshes/mesh3.json","r") as f:
     mesh_data = json.load(f)
 
 for key in mesh_data.keys():
@@ -190,7 +187,7 @@ ax.plot_trisurf(
     cmap="plasma"
 )
 ax.set_title("Solution $U$ at time $t=%1.2f$" %sol.t[-1])
-plt.savefig("figures/ex3-3d.jpg", dpi=300)
+plt.savefig("examples/legacy/figures/ex3-3d.jpg", dpi=300)
 
 # condition number
 print("\n\n Condition number cond(K): %1.3e" %np.linalg.cond(K.toarray()))

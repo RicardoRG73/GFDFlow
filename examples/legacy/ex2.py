@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 """
 Laplace equation with sinusoidal interface, and jumps in `u` and `u_n`
 [Siraj-ul-Islam, Masood Ahmad]
@@ -55,7 +52,7 @@ from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
 #%% Loading mesh from file
 import json
-with open('Meshes/mesh2.json', 'r') as file:
+with open('examples/legacy/Meshes/mesh2.json', 'r') as file:
     loaded_data = json.load(file)
 
 for key in loaded_data.keys():

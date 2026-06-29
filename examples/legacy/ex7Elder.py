@@ -19,7 +19,7 @@ from scipy.integrate import solve_ivp
 
 #%%
 # -- reading mesh data --
-mesh_file = 'Meshes/mesh7.json'
+mesh_file = 'examples/legacy/Meshes/mesh7.json'
 with open(mesh_file, 'r') as file:
     mesh_data = json.load(file)
     coords = np.array(mesh_data["coords"])
@@ -166,7 +166,7 @@ sol_data = {
     "t_eval": t_eval.tolist(),
     "U": U.tolist()
 }
-with open('results/ex7Elder.json', 'w') as file:
+with open('examples/leagcy/results/ex7Elder.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
 

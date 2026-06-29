@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 import json
 import numpy as np
 import scipy.sparse as sp
@@ -13,7 +10,7 @@ plt.rcParams["figure.autolayout"] = True
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
-with open('Meshes/mesh0.json', 'r') as file:
+with open('examples/legacy/Meshes/mesh0.json', 'r') as file:
     loaded_data = json.load(file)
 
 for key in loaded_data.keys():

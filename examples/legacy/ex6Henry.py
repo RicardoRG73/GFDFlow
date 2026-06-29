@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 #%%
 # -- libraries --
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
@@ -12,7 +9,7 @@ from scipy.integrate import solve_ivp
 
 #%%
 # -- reading mesh data --
-mesh_file = 'Meshes/mesh6.json'
+mesh_file = 'examples/legacy/Meshes/mesh6.json'
 with open(mesh_file, 'r') as file:
     mesh_data = json.load(file)
     coords = np.array(mesh_data["coords"])
@@ -196,6 +193,6 @@ sol_data = {
     "t_eval": t_eval,
     "U": U.tolist()
 }
-with open('results/ex6Henry.json', 'w') as file:
+with open('examples/legacy/results/ex6Henry.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
