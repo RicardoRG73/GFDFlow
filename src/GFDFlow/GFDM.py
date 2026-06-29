@@ -4,60 +4,6 @@ from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
 from .utils import get_support_nodes, compute_normal_vectors, normal_vector_in_node
 
-class VanGenuchten:
-    """van Genuchten constitutive model for partially saturated soils.
-    
-    Parameters
-    -----
-    alpha : float [1/L]
-        Related to the inverse of the air-entry suction.
-    n : float [-]
-        Pore-size distribution index.
-    Ks : float [L/T]
-        Saturated hydraulic conductivity.
-    thetas : float [-]
-        Saturated volumetric water content.
-    thetar : float [-]
-        Residual volumetric water content.
-    l : float [-], optional
-        Pore-connectivity parameter (default is 0.5).
-    """
-    def __init__(self, alpha, n, Ks, thetas, thetar, l=0.5):
-        self.alpha = alpha
-        self.n = n
-        self.m = 1 - 1/n
-        self.Ks = Ks
-        self.thetas = thetas
-        self.thetar = thetar
-        self.l = l
-
-    def Se(self, h):
-        """Effective saturation Se(h). h is pressure head [L]."""
-        if h >= 0:
-            return 1.0
-        else:
-            return (1 + (self.alpha * abs(h))**self.n)**(-self.m)
-
-    def K(self, h):
-        """Hydraulic conductivity K(h) [L/T]."""
-        se = self.Se(h)
-        if h >= 0:
-            return self.Ks
-        else:
-            return self.Ks * (se**self.l) * (1 - (1 - se**(1/self.m))**self.m)**2
-
-    def C(self, h):
-        """Specific moisture capacity C(h) = d(theta)/dh [1/L]."""
-        if h >= 0:
-            return 1e-5  # Specific storage for saturated zone (compressibility)
-        else:
-            ah = self.alpha * abs(h)
-            return (self.thetas - self.thetar) * self.alpha * self.n * self.m * (ah**(self.n-1)) / ((1 + ah**self.n)**(self.m + 1))
-
-    def __call__(self, p, h=0):
-        """Returns K(h). p is position (unused here)."""
-        return self.K(h)
-
 class GFDMI_2D_problem:
     """
     Class to model and solve 2D partial differential equations using the 
@@ -129,11 +75,6 @@ class GFDMI_2D_problem:
         self.dirichlet_boundaries: Dict[str, List] = {}
         self.interfaces: Dict[str, List] = {}
         self.intersections: Dict[str, List] = {}
-
-    @staticmethod
-    def _support_nodes(node_idx: int, triangles: npt.NDArray[np.int_], min_support: int = 5, max_iter: int = 2) -> npt.NDArray[np.int_]:
-        """Internal wrapper for support node selection."""
-        return get_support_nodes(node_idx, triangles, min_support, max_iter)
 
     def support_nodes(self, node: int, min_support_nodes: int = 5, max_iter: int = 2) -> npt.NDArray[np.int_]:
         """
