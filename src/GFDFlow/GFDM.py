@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
-from .utils import get_support_nodes, compute_normal_vectors, normal_vector_in_node
+from .utils import get_support_nodes, compute_normal_vectors, normal_vector_in_node, compute_M_matrix
 
 class GFDMI_2D_problem:
     """
@@ -38,7 +38,9 @@ class GFDMI_2D_problem:
         coords: npt.NDArray[np.float64], 
         triangles: npt.NDArray[np.int_], 
         L: npt.NDArray[np.float64], 
-        source: Callable[[npt.NDArray[np.float64]], float]
+        source: Callable[[npt.NDArray[np.float64]], float],
+        support_stencils: Optional[Dict[int, npt.NDArray[np.int_]]] = None,
+        M_pinv: Optional[Dict[int, npt.NDArray[np.float64]]] = None
     ):
         """
         Initializes the GFDMI 2D problem.
@@ -75,26 +77,19 @@ class GFDMI_2D_problem:
         self.dirichlet_boundaries: Dict[str, List] = {}
         self.interfaces: Dict[str, List] = {}
         self.intersections: Dict[str, List] = {}
-
-    def support_nodes(self, node: int, min_support_nodes: int = 5, max_iter: int = 2) -> npt.NDArray[np.int_]:
-        """
-        Public method to get support nodes for a given node.
-        
-        Parameters
-        ----------
-        node : int
-            Index of the central node.
-        min_support_nodes : int, optional
-            Default is 5.
-        max_iter : int, optional
-            Default is 2.
-            
-        Returns
-        -------
-        npt.NDArray[np.int_]
-            Indices of the support nodes.
-        """
-        return get_support_nodes(node, self.triangles, min_support_nodes, max_iter)
+        if support_stencils is None:
+            self.support_stencils = {
+                i: get_support_nodes(i, self.triangles) for i in range(self.coords.shape[0])
+            }
+        else:
+            self.support_stencils = support_stencils
+        if M_pinv is None:
+            self.M_pinv = {
+                i: np.linalg.pinv(compute_M_matrix(i, self.support_stencils[i], self.coords))
+                for i in range(self.coords.shape[0])
+            }
+        else:
+            self.M_pinv = M_pinv
 
     def normal_vector_in_node(self, node: int, boundary_nodes: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
         """
@@ -176,23 +171,12 @@ class GFDMI_2D_problem:
         ]
 
     def _assemble_point_discretization(self, i: int, k_val: float, operator: npt.NDArray[np.float64], 
-                                       support_indices: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
-        """Calculates the Gamma stencil for a node."""
-        deltasx = self.coords[support_indices, 0] - self.coords[i, 0]
-        deltasy = self.coords[support_indices, 1] - self.coords[i, 1]
+                                       support_indices: npt.NDArray[np.int_], M_pinv: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        """Calculates the Gamma coefficients for a node `i`."""
         
-        # Taylor expansion matrix (size 6 x support_size)
-        M = np.vstack((
-            np.ones(deltasx.shape),
-            deltasx,
-            deltasy,
-            deltasx**2,
-            deltasx*deltasy,
-            deltasy**2
-        ))
-        
-        # solve M^T * Gamma = k * L
-        return np.linalg.pinv(M) @ (k_val * operator)
+        # solve M * Gamma = k * L
+        # Gamma = M^-1 @ (k * L)
+        return M_pinv @ (k_val * operator)
 
     def discretization_K_F(self, continuous: bool = False) -> Tuple[sp.csr_matrix, npt.NDArray[np.float64]]:
         """
@@ -232,8 +216,8 @@ class GFDMI_2D_problem:
         for k_fn, nodes in self.materials.values():
             interior = np.setdiff1d(nodes, neumann_n)
             for i in interior:
-                I = self.support_nodes(i)
-                Gamma = self._assemble_point_discretization(i, k_fn(self.coords[i]), L, I)
+                I = self.support_stencils[i]
+                Gamma = self._assemble_point_discretization(i, k_fn(self.coords[i]), L, I, self.M_pinv[i])
                 K[i, I] = Gamma
                 F[i] = self.source(self.coords[i])
 
@@ -241,7 +225,7 @@ class GFDMI_2D_problem:
         for k_fn, b_nodes, u_n_fn in self.neumann_boundaries.values():
             normals = self.normal_vectors(b_nodes)
             for idx, i in enumerate(b_nodes):
-                I = self.support_nodes(i)
+                I = self.support_stencils[i]
                 ni = normals[idx]
                 k_val = k_fn(self.coords[i])
                 
@@ -280,7 +264,7 @@ class GFDMI_2D_problem:
                 # Discontinuous interface handling
                 normals = self.normal_vectors(biA)
                 for idx, i in enumerate(biA):
-                    I0 = np.setdiff1d(self.support_nodes(i), m1)
+                    I0 = np.setdiff1d(self.support_stencils[i], m1)
                     ni = normals[idx]
                     k0_val = k0(self.coords[i])
                     
@@ -304,7 +288,7 @@ class GFDMI_2D_problem:
                 
                 normals_B = self.normal_vectors(biB)
                 for idx, i in enumerate(biB):
-                    I1 = np.setdiff1d(self.support_nodes(i), m0)
+                    I1 = np.setdiff1d(self.support_stencils[i], m0)
                     ni = -normals_B[idx]
                     k1_val = k1(self.coords[i])
                     
@@ -342,7 +326,7 @@ class GFDMI_2D_problem:
                 # Side A
                 normals = self.normal_vectors(biA)
                 for idx, i in enumerate(biA):
-                    I0 = np.setdiff1d(self.support_nodes(i), m1)
+                    I0 = np.setdiff1d(self.support_stencils[i], m1)
                     ni = normals[idx]
                     k0_val = k0(self.coords[i])
                     
@@ -365,7 +349,7 @@ class GFDMI_2D_problem:
                 
                 # Side B (Continuous version adds to the same interface node)
                 for idx, i in enumerate(biA): # biA here as same nodes but for Side B contribution
-                    I1 = np.setdiff1d(self.support_nodes(i), m0)
+                    I1 = np.setdiff1d(self.support_stencils[i], m0)
                     ni = -normals[idx]
                     k1_val = k1(self.coords[i])
                     

@@ -149,3 +149,33 @@ def normal_vector_in_node(node_idx: int, boundary_nodes: npt.NDArray[np.int_], c
         ni = ni / np.linalg.norm(ni)
 
     return ni
+
+def compute_M_matrix(node_idx: int, support_nodes: npt.NDArray[np.int_], coords: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """
+    Computes the M matrix for a given node.
+
+    Parameters
+    ----------
+    node_idx : int
+        Index of the central node.
+    support_nodes : npt.NDArray[np.int_]
+        Indices of the support nodes.
+    coords : npt.NDArray[np.float64]
+        Array with shape (n, 2) containing the coordinates of the n nodes.
+
+    Returns
+    -------
+    npt.NDArray[np.float64]
+        The M matrix.
+    """
+    p0 = coords[node_idx]
+    M = np.zeros((6, support_nodes.shape[0]))
+    delta_x = coords[support_nodes, 0] - p0[0]
+    delta_y = coords[support_nodes, 1] - p0[1]
+    M[0, :] = 1
+    M[1, :] = delta_x
+    M[2, :] = delta_y
+    M[3, :] = delta_x ** 2
+    M[4, :] = delta_x * delta_y
+    M[5, :] = delta_y ** 2
+    return M

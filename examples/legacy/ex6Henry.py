@@ -1,5 +1,7 @@
 #%%
 # -- libraries --
+import time
+start_time = time.perf_counter()
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 import numpy as np
 import json
@@ -71,7 +73,7 @@ Cr = lambda p: 1
 Ct = lambda p: 0
 Cb = lambda p: 0
 
-problem = gfdmi(coords, faces, L2, source)
+problem = gfdmi(coords, faces, L2, source, problem.support_stencils, problem.M_pinv)
 
 problem.material("0", k, interior_nodes)
 
@@ -196,3 +198,7 @@ sol_data = {
 with open('examples/legacy/results/ex6Henry.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
+
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+print(f"Execution time: {execution_time:.6f} seconds")

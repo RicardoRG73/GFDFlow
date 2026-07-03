@@ -1,10 +1,9 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 # ex7 Elder problem
 
 #%%
 # -- import libraries --
+import time
+start_time = time.perf_counter()
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
@@ -67,7 +66,7 @@ k = lambda p: 1
 
 C_top = 2
 
-problem = gfdm(coords, triangles, L, source)
+problem = gfdm(coords, triangles, L, source, problem.support_stencils, problem.M_pinv)
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("bottom", bottom_nodes, lambda p: 0)
 problem.dirichlet_boundary("top", top_nodes, lambda p: C_top)
@@ -166,7 +165,10 @@ sol_data = {
     "t_eval": t_eval.tolist(),
     "U": U.tolist()
 }
-with open('examples/leagcy/results/ex7Elder.json', 'w') as file:
+with open('examples/legacy/results/ex7Elder.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
 
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+print(f"Execution time: {execution_time:.6f} seconds")

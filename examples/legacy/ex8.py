@@ -1,3 +1,6 @@
+#%%
+import time
+start_time = time.perf_counter()
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
@@ -78,7 +81,7 @@ plt.title(f"Mesh")
 plt.suptitle(f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes", fontsize=8, y=0.90)
 
 
-# nodes identification
+#%% nodes identification
 left_nodes = np.asarray(bdofs[left]) - 1
 right_nodes = np.asarray(bdofs[right]) - 1
 neumann_nodes = np.asarray(bdofs[neumann]) - 1
@@ -118,9 +121,7 @@ plt.legend(loc="center")
 
 
 
-
-
-# Problem Discretization
+#%% Problem Discretization
 # Paramters laplacian
 L = np.array([0,0,0,1,0,1])
 source = lambda p: 0
@@ -190,6 +191,10 @@ plt.fill(
     ys_dam,
     color="gray"
 )
+
+end_time = time.perf_counter()
+execution_time = end_time - start_time
+print(f"Execution time: {execution_time:.6f} seconds")
 
 # plt.savefig("figures/ex8.png", dpi=300, bbox_inches="tight")
 plt.show()
