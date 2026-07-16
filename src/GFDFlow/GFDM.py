@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
-from .utils import get_support_nodes, compute_normal_vectors, normal_vector_in_node, compute_M_matrix
+from .utils import get_support_nodes, compute_M_matrix
 
 class GFDMI_2D_problem:
     """
@@ -37,6 +37,7 @@ class GFDMI_2D_problem:
         self, 
         coords: npt.NDArray[np.float64], 
         triangles: npt.NDArray[np.int_], 
+        normal_vectors: npt.NDArray[np.float64],
         L: npt.NDArray[np.float64], 
         source: Callable[[npt.NDArray[np.float64]], float],
         support_stencils: Optional[Dict[int, npt.NDArray[np.int_]]] = None,
@@ -65,11 +66,20 @@ class GFDMI_2D_problem:
             raise ValueError(f"coords must have shape (n, 2), got {coords.shape}")
         if triangles.ndim != 2 or triangles.shape[1] != 3:
             raise ValueError(f"triangles must have shape (m, 3), got {triangles.shape}")
+        if normal_vectors.ndim != 2 or normal_vectors.shape[1] != 2:
+            raise ValueError(f"normal_vectors must have shape (n, 2), got {normal_vectors.shape}")
+        if normal_vectors.shape[0] != coords.shape[0]:
+            raise ValueError(
+                f"normal_vectors must have the same number of rows as coords (n_nodes={coords.shape[0]}), "
+                f"got {normal_vectors.shape[0]}. "
+                "Build a full-size (N, 2) array and assign compact normals at the boundary node indices."
+            )
         if L.size != 6:
             raise ValueError(f"L must have 6 coefficients [A, B, C, D, E, F], got {L.size}")
 
         self.coords = coords
         self.triangles = triangles
+        self.normal_vectors = normal_vectors
         self.L = L.copy().astype(float)
         self.source = source
         self.materials: Dict[str, List] = {}
@@ -90,40 +100,6 @@ class GFDMI_2D_problem:
             }
         else:
             self.M_pinv = M_pinv
-
-    def normal_vector_in_node(self, node: int, boundary_nodes: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
-        """
-        Public method to get the normal vector at a given node.
-        
-        Parameters
-        ----------
-        node : int
-            Index of the central node.
-        boundary_nodes : npt.NDArray[np.int_]
-            Indices of the boundary nodes.
-            
-        Returns
-        -------
-        npt.NDArray[np.float64]
-            Normal vector at the given node.
-        """
-        return normal_vector_in_node(node, boundary_nodes, self.coords)
-    
-    def normal_vectors(self, boundary_nodes: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]:
-        """
-        Computes normal vectors at boundary nodes.
-
-        Parameters
-        ----------
-        boundary_nodes : npt.NDArray[np.int_]
-            Indices of boundary nodes.
-
-        Returns
-        -------
-        npt.NDArray[np.float64]
-            Normal vectors (N, 2).
-        """
-        return compute_normal_vectors(boundary_nodes, self.coords)
     
     def material(self, label: str, permeability: Callable[[npt.NDArray[np.float64]], float], interior_nodes: npt.NDArray[np.int_]) -> None:
         """Defines material properties for a set of nodes."""
@@ -223,7 +199,7 @@ class GFDMI_2D_problem:
 
         # 3. Neumann boundary assembly
         for k_fn, b_nodes, u_n_fn in self.neumann_boundaries.values():
-            normals = self.normal_vectors(b_nodes)
+            normals = self.normal_vectors[b_nodes]
             for idx, i in enumerate(b_nodes):
                 I = self.support_stencils[i]
                 ni = normals[idx]
@@ -262,7 +238,7 @@ class GFDMI_2D_problem:
         for k0, k1, biA, biB, beta, alpha, m0, m1 in self.interfaces.values():
             if not continuous:
                 # Discontinuous interface handling
-                normals = self.normal_vectors(biA)
+                normals = self.normal_vectors[biA]
                 for idx, i in enumerate(biA):
                     I0 = np.setdiff1d(self.support_stencils[i], m1)
                     ni = normals[idx]
@@ -286,7 +262,7 @@ class GFDMI_2D_problem:
                     K[i, I0] = G_full[1:] - Gg * Gn_full[1:]
                     F[i] = self.source(self.coords[i]) - Gg * beta(self.coords[i])
                 
-                normals_B = self.normal_vectors(biB)
+                normals_B = self.normal_vectors[biB]
                 for idx, i in enumerate(biB):
                     I1 = np.setdiff1d(self.support_stencils[i], m0)
                     ni = -normals_B[idx]
@@ -324,7 +300,7 @@ class GFDMI_2D_problem:
             else:
                 # Continuous interface assembly
                 # Side A
-                normals = self.normal_vectors(biA)
+                normals = self.normal_vectors[biA]
                 for idx, i in enumerate(biA):
                     I0 = np.setdiff1d(self.support_stencils[i], m1)
                     ni = normals[idx]
@@ -386,9 +362,9 @@ class GFDMI_2D_problem:
                 # support nodes and normal vec at center_node
                 all_nodes = np.union1d(l_r_nodes, mat_nodes)
                 all_nodes = np.union1d(all_nodes, [center_node])
-                support_nodes = self.support_nodes(center_node)
+                support_nodes = self.support_stencils[center_node]
                 support_nodes = np.intersect1d(support_nodes, all_nodes)
-                n_center = self.normal_vector_in_node(center_node, l_r_nodes)
+                n_center = self.normal_vectors[center_node]
                 # GFDM weights
                 deltasx = self.coords[support_nodes, 0] - self.coords[center_node, 0]
                 deltasy = self.coords[support_nodes, 1] - self.coords[center_node, 1]

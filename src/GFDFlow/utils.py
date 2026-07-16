@@ -44,7 +44,7 @@ def get_support_nodes(
 
     return np.array(list(support_nodes))
 
-def compute_normal_vectors(
+def compute_normal_vectors_legacy(
     boundary_nodes: npt.NDArray[np.int_],
     coords: npt.NDArray[np.float64]
 ) -> npt.NDArray[np.float64]:
@@ -111,44 +111,59 @@ def compute_normal_vectors(
                     normal_vecs[i] = ni
     
     return normal_vecs
-    
-def normal_vector_in_node(node_idx: int, boundary_nodes: npt.NDArray[np.int_], coords: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+
+def compute_normal_vectors(
+    boundary_nodes: npt.NDArray[np.int_],
+    coords: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
     """
-    Computes the normal vector at a given node using boundary nodes around it.
+    Computes normal vectors at boundary nodes.
 
     Parameters
     ----------
-    node_idx : int
-        Index of the central node.
     boundary_nodes : npt.NDArray[np.int_]
-        Indices of the boundary nodes.
+        index of boundary nodes.
     coords : npt.NDArray[np.float64]
-        Array with shape (n, 2) containing the coordinates of the n nodes.
+        array with shape (n,2) containing the coordinates of the n nodes.
 
     Returns
     -------
-    npt.NDArray[np.float64]
-        The normal vector at the given node.
+    normal_vecs : npt.NDArray[np.float64]
+        array with shape (N,2) containing the normal vectors at the N boundary nodes.
     """
+    N = boundary_nodes.shape[0]
+    centroid = np.mean(coords[boundary_nodes], axis=0)
     
-    tol = 1e-4
-    p0 = coords[node_idx]
-    p1 = coords[boundary_nodes[0]]
-    p2 = coords[boundary_nodes[1]]
-    v = p1 - p0
-    v = v / np.linalg.norm(v)
-    w = p2 - p0
-    w = w / np.linalg.norm(w)
-    line = np.dot(v, w) > (1 - tol)
-    if line:
-        clockwise_rotation = np.array([[0, 1], [-1, 0]])
-        ni = clockwise_rotation @ v
-    else:
-        pm = np.mean(coords[boundary_nodes])
-        ni = coords[node_idx] - pm
-        ni = ni / np.linalg.norm(ni)
+    if N < 3:
+        return np.zeros((N, 2))
 
-    return ni
+    clockwise_rotation = np.array([[0, 1], [-1, 0]])
+    normal_vecs = np.zeros((N, 2))
+    
+    for i, node in enumerate(boundary_nodes):
+        distance = np.sqrt((coords[node, 0] - coords[boundary_nodes, 0])**2 + 
+                           (coords[node, 1] - coords[boundary_nodes, 1])**2)
+        
+        max_closest = min(3, N)
+        closest_indices = distance.argsort()[:max_closest]
+        closest_nodes = boundary_nodes[closest_indices]
+        
+        # Tangent vector: from first to last of the closest nodes
+        diff_v = coords[closest_nodes[-1]] - coords[closest_nodes[0]]
+        norm_diff = np.linalg.norm(diff_v)
+        
+        if norm_diff > 1e-6:
+            unit_v = diff_v / norm_diff
+            ni = clockwise_rotation @ unit_v
+            # Ensure normal points outward using absolute value for alignment
+            ni = ni * np.sign(np.dot(ni, coords[node] - centroid))
+            normal_vecs[i] = ni
+        else:
+            ni = coords[node] - centroid
+            ni = ni / (np.linalg.norm(ni) + 1e-12)
+            normal_vecs[i] = ni
+    
+    return normal_vecs
 
 def compute_M_matrix(node_idx: int, support_nodes: npt.NDArray[np.int_], coords: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     """

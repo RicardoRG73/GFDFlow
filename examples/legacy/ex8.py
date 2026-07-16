@@ -14,7 +14,8 @@ import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
-from scipy.integrate import solve_ivp
+from GFDFlow.utils import compute_normal_vectors
+from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
 g = cfg.Geometry()
 
@@ -119,6 +120,34 @@ for nodes, label in zip(nodes_to_plot, labels):
 plt.axis("equal")
 plt.legend(loc="center")
 
+#%% Normal vectors computation
+# compute_normal_vectors returns a compact (len(neumann_nodes), 2) array.
+# We need a full-size (N, 2) array so GFDM.py can index it with global node indices.
+normal_vecs_compact = compute_normal_vectors(neumann_nodes, coords)
+normal_vecs = np.zeros((N, 2))
+normal_vecs[neumann_nodes] = normal_vecs_compact
+
+# normal vectors plot
+plt.figure()
+plt.scatter(
+    coords[neumann_nodes, 0],
+    coords[neumann_nodes, 1],
+    label="neumann"
+)
+
+for node in neumann_nodes:
+    plt.quiver(
+        coords[node, 0],
+        coords[node, 1],
+        normal_vecs[node, 0],
+        normal_vecs[node, 1],
+        color="red",
+        alpha=0.3
+    )
+
+plt.axis("equal")
+plt.legend()
+
 
 
 #%% Problem Discretization
@@ -128,9 +157,7 @@ source = lambda p: 0
 k = lambda p: 0.5
 neumann_condition = lambda p: 0
 
-from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
-
-problem = gfdmi(coords, faces, L, source)
+problem = gfdmi(coords, faces, normal_vecs, L, source)
 
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("left", left_nodes, lambda p: 50)
