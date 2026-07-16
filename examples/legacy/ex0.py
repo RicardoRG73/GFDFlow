@@ -29,7 +29,7 @@ bottom_condition = lambda p: p[0] * 0.5
 top_condition = lambda p: p[0]
 
 # problem definition
-problem = gfdmi(coords,triangles,L,source)
+problem = gfdmi(coords,triangles, normal_vectors, L, source)
 
 problem.material('0', permeability, interior_nodes)
 

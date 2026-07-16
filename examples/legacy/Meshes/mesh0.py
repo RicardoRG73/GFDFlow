@@ -1,4 +1,4 @@
-save_mesh_to_file = False
+save_mesh_to_file = True
 show_plots = True
 
 #%% Importing Needed libraries
@@ -8,6 +8,8 @@ plt.style.use("seaborn-v0_8")
 plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["figure.autolayout"] = True
+
+from GFDFlow.utils import compute_normal_vectors
 
 # calfem-python
 import calfem.geometry as cfg
@@ -26,7 +28,7 @@ geometry.point([0,1])                      # 4
 
 # lines
 left = 11                                   # marker for nodes on left boundary
-right = 12                                  # marker for nodes on right boundary
+right = 12                                  # marker for nodes on right boundary (Neumann)
 bottom = 13                                 # marker for bottom nodes
 top = 14                                    # marker for top nodes
 geometry.spline([0,1], marker=bottom)       # 0
@@ -81,6 +83,12 @@ interior_nodes = np.setdiff1d(interior_nodes,B)
 nodes = (left_nodes,right_nodes,bottom_nodes,top_nodes,interior_nodes)
 labels = ("Left", "Right", "Bottom", "Top", "Interior")
 
+# Compute normal vectors for the Neumann boundary nodes
+normal_vectors_right = compute_normal_vectors(right_nodes, coords)
+normal_vectors = np.zeros((coords.shape[0], 2))
+normal_vectors[right_nodes] = normal_vectors_right
+
+
 if save_mesh_to_file:
     import json
     data_to_save = {}
@@ -88,7 +96,8 @@ if save_mesh_to_file:
         data_to_save[label.lower()+"_nodes"] = b.tolist()
     data_to_save["coords"] = coords.tolist()
     data_to_save["triangles"] = faces.tolist()
-    with open('Examples/Meshes/mesh0.json', 'w') as file:
+    data_to_save["normal_vectors"] = normal_vectors.tolist()
+    with open('examples/legacy/meshes/mesh0.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)
     print("\n ============\n Mesh saved \n ============")
 
@@ -113,6 +122,19 @@ if show_plots:
     plt.axis("equal")
     plt.title("$N = %d$" %coords.shape[0])
     plt.legend(loc="center")
-    # plt.savefig("figures/00nodes.jpg", dpi=300)
+
+    # Plot normal vectors
+    plt.figure()
+    plt.quiver(
+        coords[right_nodes,0],
+        coords[right_nodes,1],
+        normal_vectors[right_nodes,0],
+        normal_vectors[right_nodes,1],
+        color="red",
+        alpha=0.5
+    )
+    plt.axis("equal")
+    plt.title("Normal vectors")
+    # plt.savefig("figures/00normal_vectors.jpg", dpi=300)
 
     plt.show()
