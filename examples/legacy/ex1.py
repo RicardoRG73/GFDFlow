@@ -36,7 +36,7 @@ solution_difference = lambda p: 0.5
 
 
 #%% problem definition
-problem = gfdmi(coords,triangles,L,source)
+problem = gfdmi(coords,triangles,normal_vecs,L,source)
 
 problem.material('material0', permeability_mat0, interior_material_0_nodes)
 problem.material('material1', permeability_mat1, interior_material_1_nodes)

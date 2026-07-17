@@ -144,23 +144,21 @@ def compute_normal_vectors(
         distance = np.sqrt((coords[node, 0] - coords[boundary_nodes, 0])**2 + 
                            (coords[node, 1] - coords[boundary_nodes, 1])**2)
         
-        max_closest = min(3, N)
+        max_closest = 3
         closest_indices = distance.argsort()[:max_closest]
         closest_nodes = boundary_nodes[closest_indices]
         
         # Tangent vector: from first to last of the closest nodes
-        diff_v = coords[closest_nodes[-1]] - coords[closest_nodes[0]]
+        diff_v = coords[closest_nodes[2]] - coords[closest_nodes[0]]
         norm_diff = np.linalg.norm(diff_v)
         
         if norm_diff > 1e-6:
             unit_v = diff_v / norm_diff
             ni = clockwise_rotation @ unit_v
-            # Ensure normal points outward using absolute value for alignment
-            ni = ni * np.sign(np.dot(ni, coords[node] - centroid))
             normal_vecs[i] = ni
         else:
             ni = coords[node] - centroid
-            ni = ni / (np.linalg.norm(ni) + 1e-12)
+            ni = ni / np.linalg.norm(ni)
             normal_vecs[i] = ni
     
     return normal_vecs

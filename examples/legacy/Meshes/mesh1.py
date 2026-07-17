@@ -1,4 +1,4 @@
-save_mesh_to_file = False
+save_mesh_to_file = True
 show_plots = True
 
 #%% Importing needed libraries
@@ -13,6 +13,8 @@ plt.rcParams["figure.autolayout"] = True
 import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
+
+from GFDFlow.utils import compute_normal_vectors
 
 
 #%% Creating geometry
@@ -140,6 +142,19 @@ labels = (
     "Interior Material 1"
 )
 
+normal_vecs = np.zeros((coords.shape[0],2))
+nodes_to_compute_normals = (
+    top_left_nodes,
+    bottom_left_nodes,
+    top_right_nodes,
+    bottom_right_nodes,
+    left_interface_nodes,
+    right_interface_nodes
+)
+for boundary in nodes_to_compute_normals:
+    normals_compact = compute_normal_vectors(boundary, coords)
+    normal_vecs[boundary] = normals_compact
+
 
 if save_mesh_to_file:
     import json
@@ -148,7 +163,8 @@ if save_mesh_to_file:
         data_to_save[label.replace(" ","_").replace("-","_").lower()+"_nodes"] = b.tolist()
     data_to_save["coords"] = coords.tolist()
     data_to_save["triangles"] = faces.tolist()
-    with open('Examples/Meshes/mesh1.json', 'w') as file:
+    data_to_save["normal_vecs"] = normal_vecs.tolist()
+    with open('examples/legacy/meshes/mesh1.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)
     print("\n ============\n Mesh saved \n ============")
 
@@ -174,4 +190,15 @@ if show_plots:
     plt.title("$N = %d$" %coords.shape[0])
     plt.legend(loc="center")
     # plt.savefig("figures/01nodes.jpg", dpi=300)
+
+    #%% normal vectors plot
+    plt.figure()
+    for boundary in nodes_to_compute_normals:
+        plt.scatter(coords[boundary,0], coords[boundary,1], alpha=0.5)
+        plt.quiver(coords[boundary,0], coords[boundary,1], normal_vecs[boundary,0], normal_vecs[boundary,1], alpha=0.5)
+    plt.title("Normal Vectors")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.axis("equal")
+
     plt.show()
