@@ -79,15 +79,21 @@ def dirichlet_condition(p):
 
 # normal vectors at interface left nodes
 def compute_normal_vecs(b):
-    normal_vecs = np.zeros((b.shape[0],2))
-    for i in range(b.shape[0]):
-        normal_vecs[i,:] = np.array([ 1,  -0.628*np.cos(6.28*coords[b[i],1]) ])
-        normal_vecs[i,:] *= 1 / np.linalg.norm(normal_vecs[i,:])
-    return normal_vecs
+    normal_vecs = np.empty((b.shape[0], 2))
+    normal_vecs[:, 0] = 1.0
+    normal_vecs[:, 1] = -0.628 * np.cos(6.28 * coords[b, 1])
+    norms = np.linalg.norm(normal_vecs, axis=1, keepdims=True)
+    return normal_vecs / norms
+
+normal_vecs_left_interface = compute_normal_vecs(interface_left_nodes)
+normal_vecs_right_interface = compute_normal_vecs(interface_right_nodes)
+
+normal_vecs = np.zeros((coords.shape[0],2))
+normal_vecs[interface_left_nodes,:] = normal_vecs_left_interface
+normal_vecs[interface_right_nodes,:] = normal_vecs_right_interface
 
 # flux diference du/dn|_{left} - du/dn|_{rignt} = beta 
 def beta(p):
-    normal_vecs = compute_normal_vecs(interface_left_nodes)
     i = np.argmin(
         np.sqrt(
             (coords[interface_left_nodes,0]-p[0])**2
@@ -110,7 +116,7 @@ def beta(p):
 alpha = lambda p: -np.sin(np.pi*p[0]) * np.exp(np.pi*p[1])
 
 # problem definition
-problem = gfdmi(coords, triangles, L, source)
+problem = gfdmi(coords, triangles, normal_vecs, L, source)
 
 problem.material('material_left', permeability_left, omega_plus_nodes)
 problem.material('material_right', permeability_right, omega_minus_nodes)
@@ -128,8 +134,6 @@ problem.interface(
     omega_plus_nodes,
     omega_minus_nodes
 )
-
-problem.normal_vectors = compute_normal_vecs
 
 
 #%% Assembling system `KU=F`
@@ -176,6 +180,20 @@ def exact(p):
 Uex = np.zeros(shape=U.shape)
 for i in range(U.shape[0]):
     Uex[i] = exact(coords[i,:])
+
+#%% normal vectors plot
+plt.figure()
+plt.scatter(coords[interface_left_nodes,0], coords[interface_left_nodes,1], 1)
+for b in (interface_left_nodes, interface_right_nodes):
+    plt.quiver(
+        coords[b,0],
+        coords[b,1],
+        normal_vecs[b,0],
+        normal_vecs[b,1],
+        color='k',
+        alpha=0.3
+    )
+plt.axis("equal")
 
 #%% 3D plotting
 fig = plt.figure()

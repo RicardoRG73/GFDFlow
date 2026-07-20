@@ -15,10 +15,11 @@ from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
 # loading mesh data
 import json
-with open("examples/legacy/Meshes/mesh3.json","r") as f:
+with open("examples/legacy/meshes/mesh3.json","r") as f:
     mesh_data = json.load(f)
 
-for key in mesh_data.keys():
+keys = list(mesh_data.keys())
+for key in keys:
     globals()[key] = np.array(mesh_data[key])
 
 #%%
@@ -41,6 +42,7 @@ beta = lambda p: 0
 problem = gfdmi(
     coords,
     triangles,
+    normal_vecs,
     L,
     source
 )

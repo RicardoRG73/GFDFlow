@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 plt.style.use("seaborn-v0_8")
 
+from GFDFlow.utils import compute_normal_vectors
+
 #%%
 # =============================================================================
 # Geometry
@@ -132,6 +134,25 @@ labels = (
     "Clay"
 )
 
+# computing normal vectors
+normal_vecs = np.zeros((coords.shape[0],2))
+for nodes in (bottom_nodes, top_nodes, left_interface_nodes, right_interface_nodes):
+    normal_vecs[nodes] = compute_normal_vectors(nodes, coords)
+
+
+if save_mesh_to_file:
+    import json
+    data_to_save = {}
+    for b,label in zip(nodes_to_plot, labels):
+        data_to_save[label.replace(" ","_").replace("-","_").lower()+"_nodes"] = b.tolist()
+    data_to_save["coords"] = coords.tolist()
+    data_to_save["triangles"] = triangles.tolist()
+    data_to_save["normal_vecs"] = normal_vecs.tolist()
+    with open('examples/legacy/meshes/mesh3.json', 'w') as file:
+        json.dump(data_to_save, file, indent=4)
+    print("\n ============\n Mesh saved \n ============")
+
+
 if show_plots:
     # geometry plot
     cfv.figure(fig_size=(6,4))
@@ -159,15 +180,18 @@ if show_plots:
     plt.legend()
     # plt.savefig("figures/04bnodes.jpg", dpi=300)
 
-    plt.show()
+    # normal vectors plot
+    plt.figure()
+    for nodes in (bottom_nodes, top_nodes, left_interface_nodes, right_interface_nodes):
+        plt.scatter(coords[nodes,0], coords[nodes,1])
+        plt.quiver(
+            coords[nodes,0],
+            coords[nodes,1],
+            normal_vecs[nodes,0],
+            normal_vecs[nodes,1],
+            color='k',
+            alpha=0.3
+        )
+    plt.axis("equal")
 
-if save_mesh_to_file:
-    import json
-    data_to_save = {}
-    for b,label in zip(nodes_to_plot, labels):
-        data_to_save[label.replace(" ","_").replace("-","_").lower()+"_nodes"] = b.tolist()
-    data_to_save["coords"] = coords.tolist()
-    data_to_save["triangles"] = triangles.tolist()
-    with open('Examples/Meshes/mesh3.json', 'w') as file:
-        json.dump(data_to_save, file, indent=4)
-    print("\n ============\n Mesh saved \n ============")
+    plt.show()
