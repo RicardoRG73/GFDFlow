@@ -18,8 +18,7 @@ import json
 with open("examples/legacy/meshes/mesh3.json","r") as f:
     mesh_data = json.load(f)
 
-keys = list(mesh_data.keys())
-for key in keys:
+for key in mesh_data.keys():
     globals()[key] = np.array(mesh_data[key])
 
 #%%
