@@ -22,7 +22,8 @@ with open(mesh_file, 'r') as file:
     right_nodes = np.array(mesh_data["right_nodes"])
     bottom_nodes = np.array(mesh_data["bottom_nodes"])
     top_nodes = np.array(mesh_data["top_nodes"])
-    corner_nodes = np.array(mesh_data["corner_nodes"])
+    corner_nodes = np.array(mesh_data["corner_nodes"]) 
+    normal_vecs = np.array(mesh_data["normal_vecs"])
 
 #%%
 # -- problem parameters --
@@ -44,7 +45,7 @@ Psir = lambda p: 0
 
 L2 = np.array([0,0,0,1,0,1])
 
-problem = gfdmi(coords, faces, L2, source)
+problem = gfdmi(coords, faces, normal_vecs, L2, source)
 
 problem.material("0", k, interior_nodes)
 
@@ -73,7 +74,7 @@ Cr = lambda p: 1
 Ct = lambda p: 0
 Cb = lambda p: 0
 
-problem = gfdmi(coords, faces, L2, source, problem.support_stencils, problem.M_pinv)
+problem = gfdmi(coords, faces, normal_vecs, L2, source, problem.support_stencils, problem.M_pinv)
 
 problem.material("0", k, interior_nodes)
 
@@ -183,7 +184,9 @@ U0 = np.hstack((Psi0, C0))
 t_final = 0.21
 tspan = [0, t_final]
 t_eval = [0, 0.02, 0.05, 0.1, 0.15, 0.21]
-sol = solve_ivp(fun, tspan, U0, t_eval=t_eval, method="LSODA")
+method = "LSODA"
+print(f"\n\n Solving IVP with {method} method\n\n")
+sol = solve_ivp(fun, tspan, U0, t_eval=t_eval, method=method)
 
 U = sol.y
 
