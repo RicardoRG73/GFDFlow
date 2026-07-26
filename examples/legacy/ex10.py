@@ -19,6 +19,8 @@ import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
+from GFDFlow.utils import compute_normal_vectors
+
 # import plots
 
 # =====
@@ -125,6 +127,21 @@ plt.axis("equal")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.title('Nodes')
 
+# normal vectors
+normal_vecs = np.zeros((coords.shape[0],2))
+normal_vecs[bi] = compute_normal_vectors(bi, coords)
+
+# normal vectors plot
+plt.figure()
+plt.scatter(coords[bi,0], coords[bi,1])
+plt.quiver(
+    coords[bi,0],
+    coords[bi,1],
+    normal_vecs[bi,0],
+    normal_vecs[bi,1]
+)
+plt.axis("equal")
+
 
 # =====
 # Problem parameters
@@ -148,7 +165,7 @@ sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 import scipy.sparse as sp
 
-problem = gfdmi(coords, faces, L, fs)
+problem = gfdmi(coords, faces, normal_vecs, L, fs)
 problem.material("mat0", k0, bm0)
 problem.material("mat1", k1, bm1)
 
