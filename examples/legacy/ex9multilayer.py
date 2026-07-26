@@ -26,6 +26,8 @@ import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
+from GFDFlow.utils import compute_normal_vectors
+
 
 # =====
 # Geometry creation
@@ -126,6 +128,31 @@ for label, nodes in zip(
 plt.axis("equal")
 plt.legend()
 
+# normal vectors
+normal_vecs = np.zeros((len(coords), 2))
+
+normal_vecs[interf0_nodes] = compute_normal_vectors(interf0_nodes, coords)
+normal_vecs[interf1_nodes] = compute_normal_vectors(interf1_nodes, coords)
+normal_vecs[interf2_nodes] = compute_normal_vectors(interf2_nodes, coords)
+normal_vecs[[5]] = np.array([1,1])/np.sqrt(2)
+
+# vectors plot
+plt.figure()
+nodes_to_plot = (
+    interf0_nodes,
+    interf1_nodes,
+    interf2_nodes,
+    [5]
+)
+for b in nodes_to_plot:
+    plt.scatter(coords[b,0], coords[b,1])
+    plt.quiver(
+        coords[b,0],
+        coords[b,1],
+        normal_vecs[b,0],
+        normal_vecs[b,1]
+    )
+plt.axis("equal")
 
 # =====
 # Problem parameters
@@ -143,7 +170,7 @@ source = lambda p: -100
 L=np.array([0,0,0,1,0,1])
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
-problem = gfdmi(coords, faces, L, source)
+problem = gfdmi(coords, faces, normal_vecs, L, source)
 
 problem.material("mat0", k0, mat0_nodes)
 problem.material("mat1", k1, mat1_nodes)
