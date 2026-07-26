@@ -85,18 +85,12 @@ right_nodes = np.setdiff1d(right_nodes, bottom_nodes)
 left_nodes = np.setdiff1d(left_nodes, top_left_nodes)
 left_nodes = np.setdiff1d(left_nodes, bottom_nodes)
 
-# top middle nodes with condition C=1
-top_nodes = top_middle_nodes
-# right and top_right share same condition for C
-right_nodes = np.hstack((right_nodes, top_right_nodes))
-# left and top_left share same condition for C
-left_nodes = np.hstack((left_nodes, top_left_nodes))
-
-
 boundary_nodes = np.hstack((
     bottom_nodes,
     right_nodes,
-    top_nodes,
+    top_right_nodes,
+    top_middle_nodes,
+    top_left_nodes,
     left_nodes
 ))
 
@@ -105,28 +99,30 @@ interior_nodes = np.setdiff1d(np.arange(N), boundary_nodes)
 
 nodes_to_plot = (
     interior_nodes,
-    left_nodes,
+    bottom_nodes,
     right_nodes,
-    top_nodes,
-    bottom_nodes
+    top_right_nodes,
+    top_middle_nodes,
+    top_left_nodes,
+    left_nodes
 )
 labels = (
     "interior",
-    "left",
+    "bottom",
     "right",
-    "top",
-    "bottom"
+    "top_right",
+    "top_middle",
+    "top_left",
+    "left"
 )
 
 normal_vecs = np.zeros((coords.shape[0], 2))
-nodes_to_compute = (
-    left_nodes,
-    right_nodes,
-    top_nodes,
-    bottom_nodes
-)
-for b in nodes_to_compute:
-    normal_vecs[b] = compute_normal_vectors_legacy(b, coords)
+normal_vecs[bottom_nodes] = np.array([0,-1])
+normal_vecs[right_nodes] = np.array([1,0])
+normal_vecs[top_right_nodes] = np.array([0,1])
+normal_vecs[top_middle_nodes] = np.array([0,1])
+normal_vecs[top_left_nodes] = np.array([0,1])
+normal_vecs[left_nodes] = np.array([-1,0])
 
 
 
@@ -180,7 +176,15 @@ if show_figures:
 
     # normal vectors plot
     plt.figure()
-    for b in nodes_to_compute:
+    nodes_to_plot = (
+        bottom_nodes,
+        right_nodes,
+        top_right_nodes,
+        top_middle_nodes,
+        top_left_nodes,
+        left_nodes
+    )
+    for b in nodes_to_plot:
         plt.scatter(coords[b,0], coords[b,1])
         plt.quiver(
             coords[b,0],

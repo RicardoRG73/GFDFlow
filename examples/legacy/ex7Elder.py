@@ -27,7 +27,9 @@ with open(mesh_file, 'r') as file:
     interior_nodes = np.array(mesh_data["interior_nodes"])
     left_nodes = np.array(mesh_data["left_nodes"])
     right_nodes = np.array(mesh_data["right_nodes"])
-    top_nodes = np.array(mesh_data["top_nodes"])
+    top_right_nodes = np.array(mesh_data["top_right_nodes"])
+    top_middle_nodes = np.array(mesh_data["top_middle_nodes"])
+    top_left_nodes = np.array(mesh_data["top_left_nodes"])
     bottom_nodes = np.array(mesh_data["bottom_nodes"])
     normal_vecs = np.array(mesh_data["normal_vecs"])
 
@@ -46,7 +48,9 @@ problem.material("interior", k, interior_nodes)
 
 problem.dirichlet_boundary("bottom", bottom_nodes, lambda p: 0)
 problem.dirichlet_boundary("right", right_nodes, lambda p: 0)
-problem.dirichlet_boundary("top", top_nodes, lambda p: 0)
+problem.dirichlet_boundary("topright", top_right_nodes, lambda p: 0)
+problem.dirichlet_boundary("topmiddle", top_middle_nodes, lambda p: 0)
+problem.dirichlet_boundary("topleft", top_left_nodes, lambda p: 0)
 problem.dirichlet_boundary("left", left_nodes, lambda p: 0)
 
 # D2 discretization
@@ -70,9 +74,12 @@ C_top = 2
 problem = gfdm(coords, triangles, normal_vecs, L, source, problem.support_stencils, problem.M_pinv)
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("bottom", bottom_nodes, lambda p: 0)
-problem.dirichlet_boundary("top", top_nodes, lambda p: C_top)
+problem.dirichlet_boundary("topmiddle", top_middle_nodes, lambda p: C_top)
 problem.neumann_boundary("right", k, right_nodes, lambda p: 0)
 problem.neumann_boundary("left", k, left_nodes, lambda p: 0)
+problem.neumann_boundary("topright", k, top_right_nodes, lambda p: 0)
+problem.neumann_boundary("topleft", k, top_left_nodes, lambda p: 0)
+
 
 # D2 discretization
 D2c, F2c = problem.continuous_discretization()
@@ -147,7 +154,7 @@ t_eval = np.array([0, 0.005, 0.01, 0.02, 0.05, 0.075, 0.1, 0.5, tfinal])
 P0 = zeros_vec.copy()
 C0 = zeros_vec.copy()
 
-C0[top_nodes] = C_top
+C0[top_middle_nodes] = C_top
 
 U0 = np.hstack((P0,C0))
 
