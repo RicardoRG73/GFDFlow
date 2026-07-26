@@ -29,6 +29,7 @@ with open(mesh_file, 'r') as file:
     right_nodes = np.array(mesh_data["right_nodes"])
     top_nodes = np.array(mesh_data["top_nodes"])
     bottom_nodes = np.array(mesh_data["bottom_nodes"])
+    normal_vecs = np.array(mesh_data["normal_vecs"])
 
 #%%
 # -- discretization --
@@ -39,7 +40,7 @@ L = np.array([0,0,0,1,0,1])
 source = lambda p: 0
 k = lambda p: 1
 
-problem = gfdm(coords, triangles, L, source)
+problem = gfdm(coords, triangles, normal_vecs, L, source)
 
 problem.material("interior", k, interior_nodes)
 
@@ -66,7 +67,7 @@ k = lambda p: 1
 
 C_top = 2
 
-problem = gfdm(coords, triangles, L, source, problem.support_stencils, problem.M_pinv)
+problem = gfdm(coords, triangles, normal_vecs, L, source, problem.support_stencils, problem.M_pinv)
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("bottom", bottom_nodes, lambda p: 0)
 problem.dirichlet_boundary("top", top_nodes, lambda p: C_top)
@@ -152,7 +153,7 @@ U0 = np.hstack((P0,C0))
 
 # solution
 method = "LSODA"
-print(f"\n\n Solving IVP with {method} method... \n\n")
+print(f"\n\n Solving IVP with {method} method\n\n")
 sol = solve_ivp(rhs, tspan, U0, t_eval=t_eval, method=method)
 U = sol.y
 print("Done!")

@@ -17,6 +17,8 @@ import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
+from GFDFlow.utils import compute_normal_vectors_legacy
+
 #%%
 # =============================================================================
 # Geometry
@@ -116,6 +118,34 @@ labels = (
     "bottom"
 )
 
+normal_vecs = np.zeros((coords.shape[0], 2))
+nodes_to_compute = (
+    left_nodes,
+    right_nodes,
+    top_nodes,
+    bottom_nodes
+)
+for b in nodes_to_compute:
+    normal_vecs[b] = compute_normal_vectors_legacy(b, coords)
+
+
+
+if save_mesh_to_file:
+    import json
+    data_to_save = {}
+    for b,label in zip(nodes_to_plot, labels):
+        data_to_save[label+"_nodes"] = b.tolist()
+    data_to_save["coords"] = coords.tolist()
+    data_to_save["triangles"] = faces.tolist()
+    data_to_save["boundary_nodes"] = boundary_nodes.tolist()
+    data_to_save["normal_vecs"] = normal_vecs.tolist()
+
+    with open('examples/legacy/meshes/mesh7.json', 'w') as file:
+        json.dump(data_to_save, file, indent=4)
+    print("\n ============\n Mesh saved \n ============")
+
+
+
 
 if show_figures:
     # geometry plot
@@ -148,18 +178,18 @@ if show_figures:
     plt.axis("equal")
     plt.legend()
 
+    # normal vectors plot
+    plt.figure()
+    for b in nodes_to_compute:
+        plt.scatter(coords[b,0], coords[b,1])
+        plt.quiver(
+            coords[b,0],
+            coords[b,1],
+            normal_vecs[b,0],
+            normal_vecs[b,1]
+        )
+    plt.title("Normal vectors")
+    plt.axis("equal")
+
 
     plt.show()
-
-if save_mesh_to_file:
-    import json
-    data_to_save = {}
-    for b,label in zip(nodes_to_plot, labels):
-        data_to_save[label+"_nodes"] = b.tolist()
-    data_to_save["coords"] = coords.tolist()
-    data_to_save["triangles"] = faces.tolist()
-    data_to_save["boundary_nodes"] = boundary_nodes.tolist()
-
-    with open('Meshes/mesh7.json', 'w') as file:
-        json.dump(data_to_save, file, indent=4)
-    print("\n ============\n Mesh saved \n ============")
