@@ -3,6 +3,7 @@ import time
 start_time = time.perf_counter()
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 import scipy.sparse as sp
 
 plt.style.use(["seaborn-v0_8-darkgrid", "seaborn-v0_8-colorblind", "seaborn-v0_8-talk"])
@@ -180,16 +181,9 @@ plt.tricontourf(
 )
 plt.axis("equal")
 plt.colorbar(label="h")
-plt.tricontour(
-    coords[:,0],
-    coords[:,1],
-    U,
-    faces,
-    levels=25,
-    colors="k",
-    linewidths=1,
-    alpha=0.5
-)
+
+triangulation = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=faces)
+plt.tricontour(triangulation, U, levels=25, colors="k", linewidths=1)
 
 # pile sheet region
 pile_sheet_nodes = np.array([3,4,5,6,7,8,9,10])

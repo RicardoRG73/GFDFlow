@@ -11,7 +11,6 @@ plt.style.use("seaborn-v0_8")
 plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["figure.autolayout"] = True
-import scipy.sparse as sp
 
 # calfem-python
 import calfem.geometry as cfg
@@ -194,7 +193,7 @@ if show_plots:
     # ploting boundaries in different colors
     plt.figure()
     for b,label in zip(nodes, labels):
-        plt.scatter(coords[b,0], coords[b,1], label=label)
+        plt.scatter(coords[b,0], coords[b,1], label=label, alpha=0.5)
     plt.axis("equal")
     plt.title("$N = %d$" %coords.shape[0])
     plt.legend()

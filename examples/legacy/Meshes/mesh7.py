@@ -17,8 +17,6 @@ import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
-from GFDFlow.utils import compute_normal_vectors_legacy
-
 #%%
 # =============================================================================
 # Geometry
@@ -117,12 +115,12 @@ labels = (
 )
 
 normal_vecs = np.zeros((coords.shape[0], 2))
-normal_vecs[bottom_nodes] = np.array([0,-1])
-normal_vecs[right_nodes] = np.array([1,0])
-normal_vecs[top_right_nodes] = np.array([0,1])
-normal_vecs[top_middle_nodes] = np.array([0,1])
-normal_vecs[top_left_nodes] = np.array([0,1])
-normal_vecs[left_nodes] = np.array([-1,0])
+normal_vecs[bottom_nodes]       = np.array([0,-1])
+normal_vecs[right_nodes]        = np.array([1,0])
+normal_vecs[top_right_nodes]    = np.array([0,1])
+normal_vecs[top_middle_nodes]   = np.array([0,1])
+normal_vecs[top_left_nodes]     = np.array([0,1])
+normal_vecs[left_nodes]         = np.array([-1,0])
 
 
 

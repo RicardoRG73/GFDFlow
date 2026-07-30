@@ -18,7 +18,7 @@ from scipy.integrate import solve_ivp
 
 #%%
 # -- reading mesh data --
-mesh_file = 'examples/legacy/Meshes/mesh7.json'
+mesh_file = 'examples/legacy/meshes/mesh7.json'
 with open(mesh_file, 'r') as file:
     mesh_data = json.load(file)
     coords = np.array(mesh_data["coords"])
