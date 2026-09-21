@@ -1,0 +1,47 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Quarto & Document Rendering Outputs
+.quarto/
+*_files/
+*.typ
+examples/legacy/reports/*.pdf
+
+# Output Figures and Numerical Results (AGENTS.md guidelines)
+examples/legacy/figures/ex*
+examples/legacy/figures/*.png
+examples/legacy/figures/*.jpg
+examples/legacy/figures/*.gif
+examples/legacy/results/*.json
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# IDEs and System Files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
