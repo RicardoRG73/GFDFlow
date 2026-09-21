@@ -4,7 +4,7 @@ import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
 
-def get_support_nodes(
+def get_support_nodes_2D(
     node_idx: int,
     triangles: npt.NDArray[np.int_],
     min_support_nodes: int = 5,

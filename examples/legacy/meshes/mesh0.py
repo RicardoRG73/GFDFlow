@@ -88,6 +88,33 @@ normal_vectors_right = compute_normal_vectors(right_nodes, coords)
 normal_vectors = np.zeros((coords.shape[0], 2))
 normal_vectors[right_nodes] = normal_vectors_right
 
+# GFDM matrix M pseudo-inverse
+# and support nodes stencils
+from GFDFlow.utils import compute_M_matrix
+from GFDFlow.utils import get_support_nodes_2D
+
+M_pinv = {}
+support_stencils = {}
+
+for boundary in (left_nodes, bottom_nodes, top_nodes, interior_nodes):
+    for i in boundary:
+        support_stencils[i] = get_support_nodes_2D(i,faces)
+        M = compute_M_matrix(i,support_stencils[i],coords)
+        M_pinv[i] = np.linalg.pinv(M)
+    
+
+for i in right_nodes:
+    support_stencils[i] = get_support_nodes_2D(i,faces)
+    M = compute_M_matrix(i,support_stencils[i],coords)
+    ni = normal_vectors[i]
+    ghost_dx = - np.mean(M[1,:])
+    ghost_dy = - np.mean(M[2,:])
+    ghost_dx, ghost_dy = np.dot(ni, np.array([ghost_dx, ghost_dy])) * ni
+    augmented_M = np.hstack((
+            np.array([[1, ghost_dx, ghost_dy, ghost_dx**2, ghost_dy**2, ghost_dx*ghost_dy]]).T,
+            M
+        ))
+    M_pinv[i] = np.linalg.pinv(augmented_M)
 
 if save_mesh_to_file:
     import json
@@ -97,6 +124,8 @@ if save_mesh_to_file:
     data_to_save["coords"] = coords.tolist()
     data_to_save["triangles"] = faces.tolist()
     data_to_save["normal_vectors"] = normal_vectors.tolist()
+    data_to_save["M_pinv"] = {str(k): v.tolist() for k, v in M_pinv.items()}
+    data_to_save["support_stencils"] = {str(k): v.tolist() for k, v in support_stencils.items()}
     with open('examples/legacy/meshes/mesh0.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)
     print("\n ============\n Mesh saved \n ============")
@@ -107,13 +136,13 @@ if show_plots:
     cfv.figure()
     cfv.title('Geometry')
     cfv.draw_geometry(geometry)
-    # plt.savefig("figures/00geometry.jpg", dpi=300)
+    plt.savefig("examples/legacy/figures/ex0/geometry.png", dpi=300)
 
     # mesh plot
     cfv.figure(fig_size=(8,4))
     cfv.title('Mesh')
     cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
-    # plt.savefig("figures/00mesh.jpg", dpi=300)
+    plt.savefig("examples/legacy/figures/ex0/mesh.png", dpi=300)
 
     # ploting boundaries in different color
     plt.figure()
@@ -122,6 +151,7 @@ if show_plots:
     plt.axis("equal")
     plt.title("$N = %d$" %coords.shape[0])
     plt.legend(loc="center")
+    plt.savefig("examples/legacy/figures/ex0/boundaries.png", dpi=300)
 
     # Plot normal vectors
     plt.figure()
@@ -135,6 +165,6 @@ if show_plots:
     )
     plt.axis("equal")
     plt.title("Normal vectors")
-    # plt.savefig("figures/00normal_vectors.jpg", dpi=300)
+    plt.savefig("examples/legacy/figures/ex0/normal_vectors.png", dpi=300)
 
     plt.show()

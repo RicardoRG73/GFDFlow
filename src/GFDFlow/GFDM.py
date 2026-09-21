@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
-from .utils import get_support_nodes, compute_M_matrix
+from .utils import get_support_nodes_2D, compute_M_matrix
 
 class GFDMI_2D_problem:
     """
@@ -89,7 +89,7 @@ class GFDMI_2D_problem:
         self.intersections: Dict[str, List] = {}
         if support_stencils is None:
             self.support_stencils = {
-                i: get_support_nodes(i, self.triangles) for i in range(self.coords.shape[0])
+                i: get_support_nodes_2D(i, self.triangles) for i in range(self.coords.shape[0])
             }
         else:
             self.support_stencils = support_stencils
@@ -179,7 +179,7 @@ class GFDMI_2D_problem:
         # Looking at original code: L[3] *= 2 and L[5] *= 2.
         # This means D and F correspond to x^2 and y^2 which should be divided by 2 in stencil calc if L is original.
         # Actually, if we multiply L[3] and L[5] by 2, we are compensating for the x^2/2 and y^2/2 in Taylor.
-        L = self.L
+        L = self.L.copy()
         L[3] *= 2
         L[5] *= 2
 
@@ -199,34 +199,19 @@ class GFDMI_2D_problem:
 
         # 3. Neumann boundary assembly
         for k_fn, b_nodes, u_n_fn in self.neumann_boundaries.values():
-            normals = self.normal_vectors[b_nodes]
             for idx, i in enumerate(b_nodes):
                 I = self.support_stencils[i]
-                ni = normals[idx]
+                ni = self.normal_vectors[i]
                 k_val = k_fn(self.coords[i])
                 
-                # Setup ghost point logic
-                deltasx = self.coords[I, 0] - self.coords[i, 0]
-                deltasy = self.coords[I, 1] - self.coords[i, 1]
-                
-                # Estimate distance for ghost point
-                mean_h = np.mean(np.sqrt(deltasx[1:]**2 + deltasy[1:]**2)) if len(I) > 1 else 0.1
-                ghost_x, ghost_y = ni * mean_h
-                
-                # Augmented stencil
-                aug_dx = np.insert(deltasx, 0, ghost_x)
-                aug_dy = np.insert(deltasy, 0, ghost_y)
-                
-                M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
-                M_pinv = np.linalg.pinv(M_aug)
-                
-                Gamma_full = M_pinv @ (k_val * L)
+                # complete equation discretization
+                Gamma_full = self.M_pinv[i] @ (k_val * L)
                 Gamma_ghost = Gamma_full[0]
                 Gamma_nodes = Gamma_full[1:]
                 
-                # Normal derivative operator [0, nx, ny, 0, 0, 0]
-                Normal_op = np.array([0, ni[0], ni[1], 0, 0, 0])
-                Gamma_n_full = M_pinv @ (k_val * Normal_op)
+                # Normal derivative discretization: L=[0, nx, ny, 0, 0, 0]
+                L_normal = np.array([0, ni[0], ni[1], 0, 0, 0])
+                Gamma_n_full = self.M_pinv[i] @ (k_val * L_normal)
                 Gamma_n_ghost = Gamma_n_full[0]
                 Gamma_n_nodes = Gamma_n_full[1:]
                 

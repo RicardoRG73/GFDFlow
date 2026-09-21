@@ -10,11 +10,20 @@ plt.rcParams["figure.autolayout"] = True
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 
-with open('examples/legacy/Meshes/mesh0.json', 'r') as file:
+with open('examples/legacy/meshes/mesh0.json', 'r') as file:
     loaded_data = json.load(file)
 
-for key in loaded_data.keys():
-    globals()[key] = np.array(loaded_data[key])
+left_nodes = np.array(loaded_data["left_nodes"])
+right_nodes = np.array(loaded_data["right_nodes"])
+bottom_nodes = np.array(loaded_data["bottom_nodes"])
+top_nodes = np.array(loaded_data["top_nodes"])
+interior_nodes = np.array(loaded_data["interior_nodes"])
+coords = np.array(loaded_data["coords"])
+triangles = np.array(loaded_data["triangles"])
+normal_vectors = np.array(loaded_data["normal_vectors"])
+support_stencils = {int(k): np.array(v) for k, v in loaded_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in loaded_data["M_pinv"].items()}
+
 
 #%% Problem parameters
 # L = [A, B, C, 2D, E, 2F] is the coefitiens vector from GFDM that aproximates
@@ -29,7 +38,7 @@ bottom_condition = lambda p: p[0] * 0.5
 top_condition = lambda p: p[0]
 
 # problem definition
-problem = gfdmi(coords,triangles, normal_vectors, L, source)
+problem = gfdmi(coords,triangles, normal_vectors, L, source, support_stencils, M_pinv)
 
 problem.material('0', permeability, interior_nodes)
 
@@ -53,7 +62,7 @@ cont = ax.tricontourf(
     coords[:,0],
     coords[:,1],
     U,
-    cmap="plasma",
+    cmap="inferno",
     levels=11
 )
 fig.colorbar(cont)
@@ -68,7 +77,7 @@ plt.clabel(cont, inline=True)
 plt.axis("equal")
 plt.xlabel("x")
 plt.ylabel("y")
-#plt.savefig("figures/ex0_contourf.jpg", dpi=300)
+plt.savefig("examples/legacy/figures/ex0/contourf.png", dpi=300)
 
 #%% 3d plot
 fig = plt.figure()
@@ -77,7 +86,7 @@ surface = ax.plot_trisurf(
     coords[:,0],
     coords[:,1],
     U,
-    cmap="plasma",
+    cmap="inferno",
     aa=False
 )
 fig.colorbar(surface)
@@ -86,6 +95,6 @@ ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("U")
 
-# plt.savefig("figures/ex0.png", dpi=300, bbox_inches="tight")
+plt.savefig("examples/legacy/figures/ex0/3dplot.png", dpi=300, bbox_inches="tight")
 
 plt.show()
