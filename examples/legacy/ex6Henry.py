@@ -3,6 +3,8 @@
 import time
 start_time = time.perf_counter()
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_solution_2d
+import matplotlib.pyplot as plt
 import numpy as np
 import json
 from scipy.integrate import solve_ivp
@@ -11,7 +13,7 @@ from scipy.integrate import solve_ivp
 
 #%%
 # -- reading mesh data --
-mesh_file = 'examples/legacy/Meshes/mesh6.json'
+mesh_file = 'examples/legacy/meshes/mesh6.json'
 with open(mesh_file, 'r') as file:
     mesh_data = json.load(file)
     coords = np.array(mesh_data["coords"])
@@ -201,6 +203,18 @@ sol_data = {
 with open('examples/legacy/results/ex6Henry.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
+
+#%% -- Visualization --
+plot_solution_2d(
+    coords,
+    U[N:, -1],
+    triangles=faces,
+    levels=20,
+    cmap="jet",
+    colorbar_label="Concentration C",
+    title=f"Henry Problem - Final Concentration C (t={t_final})",
+)
+plt.show()
 
 end_time = time.perf_counter()
 execution_time = end_time - start_time

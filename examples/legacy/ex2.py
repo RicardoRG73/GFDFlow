@@ -49,10 +49,15 @@ plt.rcParams["figure.autolayout"] = True
 import scipy.sparse as sp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import (
+    plot_normal_vectors,
+    plot_solution_2d,
+    plot_solution_comparison_3d,
+)
 
 #%% Loading mesh from file
 import json
-with open('examples/legacy/Meshes/mesh2.json', 'r') as file:
+with open('examples/legacy/meshes/mesh2.json', 'r') as file:
     loaded_data = json.load(file)
 
 for key in loaded_data.keys():
@@ -143,28 +148,14 @@ K,F = problem.discontinuous_discretization()
 U = sp.linalg.spsolve(K,F)
 
 #%% contourf
-fig = plt.figure()
-ax = plt.axes()
-cont = ax.tricontourf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_2d(
+    coords,
     U,
     cmap="plasma",
-    levels=11
+    levels=11,
+    clabel=True,
+    savepath="examples/legacy/figures/ex2_contourf.jpg",
 )
-fig.colorbar(cont)
-cont = ax.tricontour(
-    coords[:,0],
-    coords[:,1],
-    U,
-    colors="k",
-    levels=11
-)
-plt.clabel(cont, inline=True)
-plt.axis("equal")
-plt.xlabel("x")
-plt.ylabel("y")
-# plt.savefig("figures/ex2_contourf.jpg", dpi=300)
 
 #%% exact solution
 def exact(p):
@@ -182,46 +173,23 @@ for i in range(U.shape[0]):
     Uex[i] = exact(coords[i,:])
 
 #%% normal vectors plot
-plt.figure()
-plt.scatter(coords[interface_left_nodes,0], coords[interface_left_nodes,1], 1)
-for b in (interface_left_nodes, interface_right_nodes):
-    plt.quiver(
-        coords[b,0],
-        coords[b,1],
-        normal_vecs[b,0],
-        normal_vecs[b,1],
-        color='k',
-        alpha=0.3
-    )
-plt.axis("equal")
+plot_normal_vectors(
+    coords,
+    normal_vecs,
+    [interface_left_nodes, interface_right_nodes],
+    quiver_alpha=0.3,
+)
 
 #%% 3D plotting
-fig = plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_comparison_3d(
+    coords,
     U,
-    color="r",
-    alpha=0.5,
-    aa=False,
-    label="Numerical"
-)
-ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
     Uex,
-    color="b",
-    alpha=0.5,
-    aa=False,
-    label="Exact"
+    num_label="Numerical",
+    exact_label="Exact",
+    view_init=(20, -50),
+    savepath="examples/legacy/figures/ex2-3d.jpg",
 )
-plt.legend()
-ax.view_init(20,-50)
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("U")
-# plt.savefig("figures/ex2-3d.jpg", dpi=300)
 
 #%% Root Mean Square Error
 RMSE = np.sqrt(

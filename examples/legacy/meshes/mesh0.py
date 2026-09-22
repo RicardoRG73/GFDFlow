@@ -91,6 +91,7 @@ normal_vectors[right_nodes] = normal_vectors_right
 # GFDM matrix M pseudo-inverse
 # and support nodes stencils
 from GFDFlow.utils import compute_M_matrix
+from GFDFlow.utils import compute_M_matrix_neumann
 from GFDFlow.utils import get_support_nodes_2D
 
 M_pinv = {}
@@ -105,16 +106,8 @@ for boundary in (left_nodes, bottom_nodes, top_nodes, interior_nodes):
 
 for i in right_nodes:
     support_stencils[i] = get_support_nodes_2D(i,faces)
-    M = compute_M_matrix(i,support_stencils[i],coords)
-    ni = normal_vectors[i]
-    ghost_dx = - np.mean(M[1,:])
-    ghost_dy = - np.mean(M[2,:])
-    ghost_dx, ghost_dy = np.dot(ni, np.array([ghost_dx, ghost_dy])) * ni
-    augmented_M = np.hstack((
-            np.array([[1, ghost_dx, ghost_dy, ghost_dx**2, ghost_dy**2, ghost_dx*ghost_dy]]).T,
-            M
-        ))
-    M_pinv[i] = np.linalg.pinv(augmented_M)
+    M = compute_M_matrix_neumann(i,support_stencils[i],coords,normal_vectors[i])
+    M_pinv[i] = np.linalg.pinv(M)
 
 if save_mesh_to_file:
     import json

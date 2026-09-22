@@ -228,8 +228,8 @@ Tests in `tests/test_gfdmi.py` cover:
 ## 9. Agent Guidelines
 
 ### Environment
-- Check the conda environment. Current is `gfdflow`.
-    - `conda activate gfdflow`
+- Check the conda environment. Current is `gfdfm`.
+    - `conda activate gfdfm`
 - Check `requirements.txt` for dependencies.
 - Check if `gfdflow` is instaled in the current conda environment.
     - If not, install it using `pip install -e .`.

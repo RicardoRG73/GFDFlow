@@ -167,3 +167,40 @@ def compute_M_matrix(node_idx: int, support_nodes: npt.NDArray[np.int_], coords:
     M[4, :] = delta_x * delta_y
     M[5, :] = delta_y ** 2
     return M
+
+def compute_M_matrix_neumann(node_idx: int, support_nodes: npt.NDArray[np.int_], coords: npt.NDArray[np.float64], normal_vec: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """
+    Computes the M matrix for a given node.
+
+    Parameters
+    ----------
+    node_idx : int
+        Index of the central node.
+    support_nodes : npt.NDArray[np.int_]
+        Indices of the support nodes.
+    coords : npt.NDArray[np.float64]
+        Array with shape (n, 2) containing the coordinates of the n nodes.
+    normal_vec : npt.NDArray[np.float64]
+        Normal vector at the central node.
+
+    Returns
+    -------
+    npt.NDArray[np.float64]
+        The M matrix.
+    """
+    p0 = coords[node_idx]
+    M = np.zeros((6, support_nodes.shape[0] + 1))
+    delta_x = coords[support_nodes, 0] - p0[0]
+    delta_y = coords[support_nodes, 1] - p0[1]
+    ghost_dx = - np.mean(delta_x)
+    ghost_dy = - np.mean(delta_y)
+    ghost_dx, ghost_dy = np.dot(normal_vec, np.array([ghost_dx, ghost_dy])) * normal_vec
+    delta_x = np.append(ghost_dx, delta_x)
+    delta_y = np.append(ghost_dy, delta_y)
+    M[0, :] = 1
+    M[1, :] = delta_x
+    M[2, :] = delta_y
+    M[3, :] = delta_x ** 2
+    M[4, :] = delta_x * delta_y
+    M[5, :] = delta_y ** 2
+    return M

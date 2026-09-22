@@ -20,8 +20,12 @@ import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
 from GFDFlow.utils import compute_normal_vectors
-
-# import plots
+from GFDFlow.visualization import (
+    plot_nodes,
+    plot_normal_vectors,
+    plot_solution_2d,
+    plot_solution_3d,
+)
 
 # =====
 # Geometry creation
@@ -117,30 +121,25 @@ bm1 = bm1.flatten()
 bm1 = np.setdiff1d(bm1,B)
 
 # plot of nodes
-plt.figure(figsize=(7,7))
-for label, nodes in zip(
-    ('Down', 'Right', 'Up', 'Left', 'Interface', 'Material 0', 'Material 1'),
-    (b0, b1, b2, b3, bi, bm0, bm1)
-):
-    plt.scatter(coords[nodes,0], coords[nodes,1], s=15, alpha=0.7, label=label)
-plt.axis("equal")
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-plt.title('Nodes')
+plot_nodes(
+    coords,
+    {
+        "Down": b0, "Right": b1, "Up": b2, "Left": b3,
+        "Interface": bi, "Material 0": bm0, "Material 1": bm1,
+    },
+    figsize=(7, 7),
+    point_size=15,
+    alpha=0.7,
+    title="Nodes",
+    legend_bbox=(1.05, 1),
+)
 
 # normal vectors
 normal_vecs = np.zeros((coords.shape[0],2))
 normal_vecs[bi] = compute_normal_vectors(bi, coords)
 
 # normal vectors plot
-plt.figure()
-plt.scatter(coords[bi,0], coords[bi,1])
-plt.quiver(
-    coords[bi,0],
-    coords[bi,1],
-    normal_vecs[bi,0],
-    normal_vecs[bi,1]
-)
-plt.axis("equal")
+plot_normal_vectors(coords, normal_vecs, bi)
 
 
 # =====
@@ -159,9 +158,6 @@ def fs(p):                                  # sourse
     return out
 L = np.array([0,0,0,2,0,2])                 # coefitients vector
 
-import sys
-import os
-sys.path.append(os.path.join(os.getcwd(), '..', '..', 'src'))
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 import scipy.sparse as sp
 
@@ -186,17 +182,24 @@ U = sp.linalg.spsolve(K,F)
 # =====
 # Plotting solution
 # =====
-fig = plt.figure(figsize=(7,7))
-ax = plt.axes(projection='3d')
-ax.plot_trisurf(coords[:, 0], coords[:, 1], U, cmap='plasma', edgecolor='k', alpha=0.7)
-plt.title('3D Solution')
+plot_solution_3d(
+    coords, U,
+    triangles=faces,
+    cmap="plasma",
+    edge_color="k",
+    alpha=0.7,
+    title="3D Solution",
+    figsize=(7, 7),
+)
 
-plt.figure(figsize=(7,7))
-plt.tricontourf(coords[:,0], coords[:,1], U, levels=20, cmap="plasma")
-plt.colorbar()
-plt.tricontour(coords[:,0], coords[:,1], U, levels=20, colors="k", linewidths=0.5)
-plt.scatter(coords[bi,0], coords[bi,1], s=10, c='#000000', alpha=0.5)
-plt.title('Contour Solution')
+plot_solution_2d(
+    coords, U,
+    levels=20,
+    cmap="plasma",
+    title="Contour Solution",
+    figsize=(7, 7),
+    overlay_nodes=bi,
+)
 
 
 
@@ -226,18 +229,25 @@ F[b2] = 0
 for i in range(m-1):
     U2[i+1] = sp.linalg.spsolve(A, B@U2[i] + dt*F)
 
-fig = plt.figure(figsize=(7,7))
-ax = plt.axes(projection='3d')
-ax.plot_trisurf(coords[:, 0], coords[:, 1], U2[-1], cmap='plasma', edgecolor='k', alpha=0.7)
-ax.view_init(elev=35, azim=-127)
-plt.title('Crank-Nicolson' + ', $t=' + str(T) + '$')
+plot_solution_3d(
+    coords, U2[-1],
+    triangles=faces,
+    cmap="plasma",
+    edge_color="k",
+    alpha=0.7,
+    view_init=(35, -127),
+    title=f"Crank-Nicolson, $t={T}$",
+    figsize=(7, 7),
+)
 
-plt.figure(figsize=(7,7))
-plt.tricontourf(coords[:,0], coords[:,1], U2[-1], levels=20, cmap="plasma")
-plt.colorbar()
-plt.tricontour(coords[:,0], coords[:,1], U2[-1], levels=20, colors="k", linewidths=0.5)
-plt.scatter(coords[bi,0], coords[bi,1], s=10, c='#000000', alpha=0.5)
-plt.title('Crank-Nicolson' + ', $t=' + str(T) + '$')
+plot_solution_2d(
+    coords, U2[-1],
+    levels=20,
+    cmap="plasma",
+    title=f"Crank-Nicolson, $t={T}$",
+    figsize=(7, 7),
+    overlay_nodes=bi,
+)
 
 
 # animated plot

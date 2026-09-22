@@ -37,6 +37,7 @@ with open(mesh_file, 'r') as file:
 # -- discretization --
 # Psi discretization
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdm
+from GFDFlow.visualization import plot_solution_2d
 
 L = np.array([0,0,0,1,0,1])
 source = lambda p: 0
@@ -176,6 +177,18 @@ sol_data = {
 with open('examples/legacy/results/ex7Elder.json', 'w') as file:
     json.dump(sol_data, file, indent=4)
 print("\n ============\n Solution saved \n ============")
+
+#%% -- Visualization --
+plot_solution_2d(
+    coords,
+    U[N:, -1],
+    triangles=triangles,
+    levels=20,
+    cmap="jet",
+    colorbar_label="Concentration C",
+    title=f"Elder Problem - Final Concentration C (t={tfinal})",
+)
+plt.show()
 
 end_time = time.perf_counter()
 execution_time = end_time - start_time

@@ -11,6 +11,7 @@ plt.style.use("seaborn-v0_8")
 from scipy.integrate import solve_ivp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_phreatic_surface, plot_solution_2d
 
 
 # loading mesh data
@@ -112,29 +113,16 @@ U = sp.linalg.spsolve(K,F)
 # Plotting solution
 # =====
 # 2D contour plot
-plt.figure(figsize=(7,3))
-plt.tricontourf(
-    coords[:,0],
-    coords[:,1],
-    triangles,
+fig, ax = plot_solution_2d(
+    coords,
     U,
+    triangles=triangles,
     levels=50,
-    cmap="viridis"
+    cmap="viridis",
+    colorbar_label="total head",
+    title="Steady State Solution",
+    figsize=(7, 3),
+    line_alpha=0.3,
 )
-plt.colorbar(label="total head")
-plt.title("Steady State Solution")
-plt.tricontour(
-    coords[:,0],
-    coords[:,1],
-    triangles,
-    U,
-    levels=50,
-    colors="k",
-    linewidths=0.5,
-    alpha=0.3
-)
-
-plt.tricontour(coords[:,0], coords[:,1], triangles, (U-coords[:,1])*9.81, levels=[0], colors="b", linewidths=2)
-
-plt.axis("equal")
+plot_phreatic_surface(ax, coords, U, triangles=triangles, color="b", linewidths=2.0)
 plt.show()

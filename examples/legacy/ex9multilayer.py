@@ -27,6 +27,12 @@ import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
 
 from GFDFlow.utils import compute_normal_vectors
+from GFDFlow.visualization import (
+    plot_nodes,
+    plot_normal_vectors,
+    plot_solution_2d,
+    plot_solution_3d,
+)
 
 
 # =====
@@ -119,14 +125,22 @@ mat2_nodes = faces[elementmarkers == mat2]
 mat2_nodes = mat2_nodes.flatten()
 mat2_nodes = np.setdiff1d(mat2_nodes,B)
 
-plt.figure(figsize=(7,7))
-for label, nodes in zip(
-    ["mat0","mat1","mat2","interface0","interface1","interface2","center","dirichlet boundary"],
-    [mat0_nodes,mat1_nodes,mat2_nodes,interf0_nodes,interf1_nodes,interf2_nodes,[5],dirichlet_nodes]
-):
-    plt.scatter(coords[nodes,0], coords[nodes,1], s=10, alpha=0.7, label=label)
-plt.axis("equal")
-plt.legend()
+plot_nodes(
+    coords,
+    {
+        "mat0": mat0_nodes,
+        "mat1": mat1_nodes,
+        "mat2": mat2_nodes,
+        "interface0": interf0_nodes,
+        "interface1": interf1_nodes,
+        "interface2": interf2_nodes,
+        "center": [5],
+        "dirichlet boundary": dirichlet_nodes,
+    },
+    figsize=(7, 7),
+    point_size=10,
+    alpha=0.7,
+)
 
 # normal vectors
 normal_vecs = np.zeros((len(coords), 2))
@@ -137,22 +151,11 @@ normal_vecs[interf2_nodes] = compute_normal_vectors(interf2_nodes, coords)
 normal_vecs[[5]] = np.array([1,1])/np.sqrt(2)
 
 # vectors plot
-plt.figure()
-nodes_to_plot = (
-    interf0_nodes,
-    interf1_nodes,
-    interf2_nodes,
-    [5]
+plot_normal_vectors(
+    coords,
+    normal_vecs,
+    [interf0_nodes, interf1_nodes, interf2_nodes, [5]],
 )
-for b in nodes_to_plot:
-    plt.scatter(coords[b,0], coords[b,1])
-    plt.quiver(
-        coords[b,0],
-        coords[b,1],
-        normal_vecs[b,0],
-        normal_vecs[b,1]
-    )
-plt.axis("equal")
 
 # =====
 # Problem parameters
@@ -199,35 +202,34 @@ U = sp.linalg.spsolve(K,F)
 # Plotting solution
 # =====
 # 2D contour plot
-plt.figure(figsize=(7,7))
-plt.tricontourf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_2d(
+    coords,
     U,
+    triangles=faces,
     levels=25,
-    cmap="plasma"
-)
-plt.colorbar(label="total head")
-plt.title("Steady State Solution")
-plt.tricontour(
-    coords[:,0],
-    coords[:,1],
-    U,
-    faces,
-    levels=25,
-    colors="k",
+    cmap="plasma",
+    colorbar_label="total head",
+    title="Steady State Solution",
+    figsize=(7, 7),
     linewidths=1,
-    alpha=0.5
+    line_alpha=0.5,
+    overlay_nodes= {
+        "interface0": interf0_nodes,
+        "interface1": interf1_nodes,
+        "interface2": interf2_nodes,
+        "center": [5]
+    },
 )
-plt.axis("equal")
 
-# 3D plot
-plt.figure(figsize=(7,7))
-ax = plt.axes(projection='3d')
-ax.plot_trisurf(coords[:, 0], coords[:, 1], U, cmap='viridis', edgecolor='k', alpha=0.7)
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-ax.set_zlabel('U')
-plt.title('3D Solution')
+plot_solution_3d(
+    coords,
+    U,
+    triangles=faces,
+    cmap="viridis",
+    edge_color="k",
+    alpha=0.7,
+    title="3D Solution",
+    figsize=(7, 7),
+)
 
 plt.show()

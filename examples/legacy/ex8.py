@@ -17,6 +17,11 @@ import calfem.vis_mpl as cfv
 
 from GFDFlow.utils import compute_normal_vectors
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import (
+    plot_nodes,
+    plot_normal_vectors,
+    plot_solution_2d,
+)
 
 g = cfg.Geometry()
 
@@ -97,29 +102,17 @@ boundary_nodes = np.hstack((left_nodes, right_nodes, neumann_nodes))
 interior_nodes = np.setdiff1d(np.arange(N), boundary_nodes)
 
 # plot nodes
-nodes_to_plot = (
-    interior_nodes,
-    left_nodes,
-    right_nodes,
-    neumann_nodes
+plot_nodes(
+    coords,
+    {
+        "interior": interior_nodes,
+        "left": left_nodes,
+        "right": right_nodes,
+        "neumann": neumann_nodes,
+    },
+    figsize=(7, 4),
+    alpha=0.5,
 )
-labels = (
-    "interior",
-    "left",
-    "right",
-    "neumann",
-)
-plt.figure(figsize=(7,4))
-for nodes, label in zip(nodes_to_plot, labels):
-    plt.scatter(
-        coords[nodes, 0],
-        coords[nodes, 1],
-        label=label,
-        s=20,
-        alpha=0.5
-    )
-plt.axis("equal")
-plt.legend(loc="center")
 
 #%% Normal vectors computation
 # compute_normal_vectors returns a compact (len(neumann_nodes), 2) array.
@@ -129,25 +122,13 @@ normal_vecs = np.zeros((N, 2))
 normal_vecs[neumann_nodes] = normal_vecs_compact
 
 # normal vectors plot
-plt.figure()
-plt.scatter(
-    coords[neumann_nodes, 0],
-    coords[neumann_nodes, 1],
-    label="neumann"
+plot_normal_vectors(
+    coords,
+    normal_vecs,
+    neumann_nodes,
+    quiver_color="red",
+    quiver_alpha=0.3,
 )
-
-for node in neumann_nodes:
-    plt.quiver(
-        coords[node, 0],
-        coords[node, 1],
-        normal_vecs[node, 0],
-        normal_vecs[node, 1],
-        color="red",
-        alpha=0.3
-    )
-
-plt.axis("equal")
-plt.legend()
 
 
 
@@ -171,19 +152,16 @@ import scipy.sparse as sp
 U = sp.linalg.spsolve(K, F)
 
 # Plot solution
-plt.figure(figsize=(10,4))
-plt.tricontourf(
-    coords[:,0],
-    coords[:,1],
+fig, ax = plot_solution_2d(
+    coords,
     U,
+    triangles=faces,
     levels=25,
-    cmap="inferno"
+    cmap="inferno",
+    colorbar_label="h",
+    figsize=(10, 4),
+    linewidths=1,
 )
-plt.axis("equal")
-plt.colorbar(label="h")
-
-triangulation = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=faces)
-plt.tricontour(triangulation, U, levels=25, colors="k", linewidths=1)
 
 # pile sheet region
 pile_sheet_nodes = np.array([3,4,5,6,7,8,9,10])

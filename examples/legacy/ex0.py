@@ -9,6 +9,7 @@ plt.rcParams["legend.shadow"] = True
 plt.rcParams["figure.autolayout"] = True
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_solution_2d, plot_solution_3d
 
 with open('examples/legacy/meshes/mesh0.json', 'r') as file:
     loaded_data = json.load(file)
@@ -55,46 +56,22 @@ K,F = problem.continuous_discretization()
 #%% Solution to KU=F
 U = sp.linalg.spsolve(K,F)
 
-#%% contourf plot
-fig = plt.figure()
-ax = plt.axes()
-cont = ax.tricontourf(
-    coords[:,0],
-    coords[:,1],
+#%% Visualizations using GFDFlow.visualization
+plot_solution_2d(
+    coords,
     U,
     cmap="inferno",
-    levels=11
+    levels=11,
+    clabel=True,
+    savepath="examples/legacy/figures/ex0/contourf.png",
 )
-fig.colorbar(cont)
-cont = ax.tricontour(
-    coords[:,0],
-    coords[:,1],
-    U,
-    colors="k",
-    levels=11
-)
-plt.clabel(cont, inline=True)
-plt.axis("equal")
-plt.xlabel("x")
-plt.ylabel("y")
-plt.savefig("examples/legacy/figures/ex0/contourf.png", dpi=300)
 
-#%% 3d plot
-fig = plt.figure()
-ax = plt.axes(projection="3d")
-surface = ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_3d(
+    coords,
     U,
     cmap="inferno",
-    aa=False
+    view_init=(30, -130),
+    savepath="examples/legacy/figures/ex0/3dplot.png",
 )
-fig.colorbar(surface)
-ax.view_init(30,-130)
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("U")
-
-plt.savefig("examples/legacy/figures/ex0/3dplot.png", dpi=300, bbox_inches="tight")
 
 plt.show()

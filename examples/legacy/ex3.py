@@ -11,6 +11,11 @@ plt.style.use("seaborn-v0_8")
 from scipy.integrate import solve_ivp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import (
+    plot_phreatic_surface,
+    plot_solution_2d,
+    plot_solution_3d,
+)
 
 
 # loading mesh data
@@ -91,38 +96,17 @@ U = sp.linalg.spsolve(K,F)
 # Plotting U
 # =============================================================================
 # 3D
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
-    U,
-    cmap="plasma"
-)
-plt.title(r"Stationary solution $\nabla^2 u = 0$")
-# plt.savefig("figures/04b-3d.jpg", dpi=300)
+plot_solution_3d(coords, U, cmap="plasma", title=r"Stationary solution $\nabla^2 u = 0$")
 
-#%% contourf
-plt.figure()
-plt.tricontourf(
-    coords[:,0],
-    coords[:,1],
+#%% contourf with phreatic line
+fig, ax = plot_solution_2d(
+    coords,
     U,
     cmap="plasma",
-    levels=20
+    levels=20,
+    title=r"Stationary solution $\nabla^2 u = 0$",
 )
-plt.axis("equal")
-plt.colorbar()
-# line h=0
-plt.tricontour(
-    coords[:,0],
-    coords[:,1],
-    (U - coords[:,1])*9.81,
-    levels=[0.0],
-    colors="b"
-)
-plt.title(r"Stationary solution $\nabla^2 u = 0$")
-# plt.savefig("figures/04bcontourf.jpg", dpi=300)
+plot_phreatic_surface(ax, coords, U, color="b")
 
 #%%
 # =============================================================================
@@ -136,15 +120,7 @@ U0[left_nodes] = 8
 U0[right_nodes] = 0
 
 #%% initial condition plot
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
-    U0,
-    cmap="plasma"
-)
-ax.set_title("Initial Condition $U_0$")
+plot_solution_3d(coords, U0, cmap="plasma", title="Initial Condition $U_0$")
 
 #%% solution
 sol = solve_ivp(fun, t, U0)
@@ -159,36 +135,26 @@ times_index = [0, final_index//10, final_index//3, final_index]
 
 for i,t_i in enumerate(times_index):
     ax = plt.subplot(2,2,i+1)
-    ax.tricontourf(
-        coords[:,0],
-        coords[:,1],
+    plot_solution_2d(
+        coords,
         U_difussion[:,t_i],
+        levels=20,
         cmap="plasma",
-        levels=20
+        colorbar=False,
+        contour_lines=False,
+        ax=ax,
+        title=f"$t = {sol.t[t_i]:1.2f}$",
     )
-    ax.tricontour(
-        coords[:,0],
-        coords[:,1],
-        (U_difussion[:,t_i] - coords[:,1])*9.81,
-        levels=[0.0],
-        colors="k",
-        linewidths=0.5
-    )
-    ax.axis("equal")
-    ax.set_title("$t = %1.2f$" %sol.t[t_i])
-# plt.savefig("figures/ex3_contourf.jpg", dpi=300)
+    plot_phreatic_surface(ax, coords, U_difussion[:,t_i], color="k", linewidths=0.5, label=None)
 
 #%% 3d plot at final time
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_3d(
+    coords,
     U_difussion[:,final_index],
-    cmap="plasma"
+    cmap="plasma",
+    title=f"Solution $U$ at time $t={sol.t[-1]:1.2f}$",
+    savepath="examples/legacy/figures/ex3-3d.jpg",
 )
-ax.set_title("Solution $U$ at time $t=%1.2f$" %sol.t[-1])
-plt.savefig("examples/legacy/figures/ex3-3d.jpg", dpi=300)
 
 # condition number
 print("\n\n Condition number cond(K): %1.3e" %np.linalg.cond(K.toarray()))

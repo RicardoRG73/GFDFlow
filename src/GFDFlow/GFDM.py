@@ -204,14 +204,23 @@ class GFDMI_2D_problem:
                 ni = self.normal_vectors[i]
                 k_val = k_fn(self.coords[i])
                 
+                deltasx = self.coords[I, 0] - self.coords[i, 0]
+                deltasy = self.coords[I, 1] - self.coords[i, 1]
+                mean_h = np.mean(np.sqrt(deltasx[1:]**2 + deltasy[1:]**2)) if len(I) > 1 else 0.1
+                ghost_x, ghost_y = ni * mean_h
+                aug_dx = np.insert(deltasx, 0, ghost_x)
+                aug_dy = np.insert(deltasy, 0, ghost_y)
+                M_aug = np.vstack((np.ones(aug_dx.shape), aug_dx, aug_dy, aug_dx**2, aug_dx*aug_dy, aug_dy**2))
+                M_pinv = np.linalg.pinv(M_aug)
+
                 # complete equation discretization
-                Gamma_full = self.M_pinv[i] @ (k_val * L)
+                Gamma_full = M_pinv @ (k_val * L)
                 Gamma_ghost = Gamma_full[0]
                 Gamma_nodes = Gamma_full[1:]
                 
                 # Normal derivative discretization: L=[0, nx, ny, 0, 0, 0]
                 L_normal = np.array([0, ni[0], ni[1], 0, 0, 0])
-                Gamma_n_full = self.M_pinv[i] @ (k_val * L_normal)
+                Gamma_n_full = M_pinv @ (k_val * L_normal)
                 Gamma_n_ghost = Gamma_n_full[0]
                 Gamma_n_nodes = Gamma_n_full[1:]
                 

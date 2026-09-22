@@ -8,10 +8,11 @@ plt.rcParams["figure.autolayout"] = True
 import scipy.sparse as sp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_solution_2d, plot_solution_3d
 
 #%% Loading mesh from file
 import json
-with open('examples/legacy/Meshes/mesh1.json', 'r') as file:
+with open('examples/legacy/meshes/mesh1.json', 'r') as file:
     loaded_data = json.load(file)
 
 for key in loaded_data.keys():
@@ -67,46 +68,22 @@ K,F = problem.discontinuous_discretization()
 #%% Solution
 U = sp.linalg.spsolve(K,F)
 
-#%% contourf plot
-fig = plt.figure()
-ax = plt.axes()
-cont = ax.tricontourf(
-    coords[:,0],
-    coords[:,1],
+#%% Visualizations using GFDFlow.visualization
+plot_solution_2d(
+    coords,
     U,
     cmap="plasma",
-    levels=11
+    levels=11,
+    clabel=True,
+    savepath="examples/legacy/figures/ex1_contourf.jpg",
 )
-fig.colorbar(cont)
-cont = ax.tricontour(
-    coords[:,0],
-    coords[:,1],
-    U,
-    colors="k",
-    levels=11
-)
-plt.clabel(cont, inline=True)
-plt.axis("equal")
-plt.xlabel("x")
-plt.ylabel("y")
-#plt.savefig("figures/ex1_contourf.jpg", dpi=300)
 
-#%% 3d plot
-fig = plt.figure()
-ax = plt.axes(projection="3d")
-surface = ax.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
+plot_solution_3d(
+    coords,
     U,
     cmap="plasma",
-    aa=False
+    view_init=(30, -120),
+    savepath="examples/legacy/figures/ex1-3d.jpg",
 )
-fig.colorbar(surface)
-ax.view_init(30,-120)
-ax.set_xlabel("x")
-ax.set_ylabel("y")
-ax.set_zlabel("U")
-#plt.savefig("figures/ex1-3d.jpg", dpi=300)
 
-# plt.savefig("figures/ex1.png", dpi=300, bbox_inches="tight")
 plt.show()

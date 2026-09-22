@@ -8,6 +8,7 @@ import scipy.sparse as sp
 import json
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdm
+from GFDFlow.visualization import plot_solution_2d
 
 plt.style.use(["seaborn-v0_8-darkgrid", "seaborn-v0_8-colorblind", "seaborn-v0_8-paper"])
 plt.rcParams["legend.frameon"] = True
@@ -86,17 +87,24 @@ U = sp.linalg.spsolve(K,F)
 
 #%%
 # -- post processing --
-plt.figure(figsize=(10, 10))
-tri = plt.tricontourf(coords[:,0], coords[:,1], triangles, U, cmap='viridis', levels=25)
-plt.colorbar(tri, label=' Concentration (mg/L)')
-plt.tricontour(coords[:,0], coords[:,1], triangles, U, colors='k', levels=25, linewidths=0.5)
-plt.scatter(coords[interface_a_nodes,0], coords[interface_a_nodes,1], c='k', s=5, alpha=0.2)
-plt.scatter(coords[interface_b_nodes,0], coords[interface_b_nodes,1], c='k', s=5, alpha=0.2)
-plt.scatter(coords[interface_c_nodes,0], coords[interface_c_nodes,1], c='k', s=5, alpha=0.2)
-plt.scatter(coords[center_node,0], coords[center_node,1], c='k', s=5, alpha=0.2)
-plt.axis('equal')
-plt.xlabel('X (m)')
-plt.ylabel('Y (m)')
-plt.title('Concentration Distribution')
-plt.show()
+interface_overlay = {
+    "Interface A": interface_a_nodes,
+    "Interface B": interface_b_nodes,
+    "Interface C": interface_c_nodes,
+    "Intersection": np.array([center_node]),
+}
 
+plot_solution_2d(
+    coords,
+    U,
+    triangles=triangles,
+    levels=25,
+    cmap="viridis",
+    colorbar_label="Concentration (mg/L)",
+    title="Concentration Distribution",
+    xlabel="X (m)",
+    ylabel="Y (m)",
+    figsize=(10, 10),
+    overlay_nodes=interface_overlay,
+)
+plt.show()
