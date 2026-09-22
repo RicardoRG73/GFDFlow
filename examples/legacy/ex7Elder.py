@@ -184,9 +184,10 @@ plot_solution_2d(
     U[N:, -1],
     triangles=triangles,
     levels=20,
-    cmap="jet",
+    cmap="inferno",
     colorbar_label="Concentration C",
     title=f"Elder Problem - Final Concentration C (t={tfinal})",
+    savepath="examples/legacy/figures/ex7/contourf.png",
 )
 plt.show()
 

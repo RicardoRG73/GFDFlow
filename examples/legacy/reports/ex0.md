@@ -11,7 +11,7 @@ This report documents the numerical solution of a two-dimensional Poisson equati
 ### 2.1 Governing Differential Equation
 GFDFlow solves linear second-order Partial Differential Equations (PDEs) in the general operator form:
 
-$$\mathcal{L}u = A u + B u_x + C u_y + D u_{xx} + E u_{xy} + F u_{yy} = f(x, y)$$
+$$\mathb{L}u = A u + B u_x + C u_y + D u_{xx} + E u_{xy} + F u_{yy} = f(x, y)$$
 
 where $\mathbf{L} = [A, B, C, D, E, F]^T$ is the coefficient vector. For this benchmark problem, the parameters are defined as:
 

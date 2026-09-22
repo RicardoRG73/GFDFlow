@@ -45,3 +45,6 @@ examples/legacy/results/*.json
 *.swp
 *.swo
 .DS_Store
+
+# Agents tasks
+TASKS.md

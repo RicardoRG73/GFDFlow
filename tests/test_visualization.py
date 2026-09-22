@@ -7,12 +7,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from GFDFlow.visualization import (
-    plot_solution_2d,
-    plot_solution_3d,
-    plot_solution_comparison_3d,
+    plot_geometry,
+    plot_mesh,
     plot_nodes,
     plot_normal_vectors,
     plot_phreatic_surface,
+    plot_solution_2d,
+    plot_solution_3d,
+    plot_solution_comparison_3d,
 )
 
 
@@ -101,7 +103,13 @@ class TestVisualization(unittest.TestCase):
             "Interior": np.arange(10),
             "Boundary": self.boundary,
         }
-        fig, ax = plot_nodes(self.coords, node_groups, point_size=15, title="Test Nodes")
+        fig, ax = plot_nodes(
+            self.coords,
+            node_groups,
+            point_size=15,
+            colors=["blue", "red"],
+            title="Test Nodes",
+        )
         self.assertIsNotNone(fig)
         self.assertIsNotNone(ax)
 
@@ -109,7 +117,7 @@ class TestVisualization(unittest.TestCase):
         fig, ax = plot_normal_vectors(
             self.coords,
             self.normal_vecs,
-            boundary_nodes=self.boundary,
+            boundary_nodes=(self.boundary,),
             quiver_color="red",
             title="Test Normals",
         )
@@ -120,6 +128,32 @@ class TestVisualization(unittest.TestCase):
         fig, ax = plt.subplots()
         plot_phreatic_surface(ax, self.coords, self.u, triangles=self.triangles)
         self.assertIsNotNone(ax)
+
+    def test_plot_mesh(self):
+        fig, ax = plot_mesh(
+            coords=self.coords,
+            triangles=self.triangles,
+            title="Test Mesh",
+            suptitle="Subtitle",
+        )
+        self.assertIsNotNone(fig)
+        self.assertIsNotNone(ax)
+
+    def test_plot_geometry(self):
+        try:
+            import calfem.geometry as cfg
+            g = cfg.Geometry()
+            g.point([0, 0])
+            g.point([1, 0])
+            g.point([0, 1])
+            g.line([0, 1])
+            g.line([1, 2])
+            g.line([2, 0])
+            fig, ax = plot_geometry(g, title="Test Geometry")
+            self.assertIsNotNone(fig)
+            self.assertIsNotNone(ax)
+        except ImportError:
+            pass
 
 
 if __name__ == "__main__":

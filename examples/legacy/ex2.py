@@ -151,10 +151,10 @@ U = sp.linalg.spsolve(K,F)
 plot_solution_2d(
     coords,
     U,
-    cmap="plasma",
+    cmap="inferno",
     levels=11,
     clabel=True,
-    savepath="examples/legacy/figures/ex2_contourf.jpg",
+    savepath="examples/legacy/figures/ex2/contourf.jpg",
 )
 
 #%% exact solution
@@ -178,6 +178,7 @@ plot_normal_vectors(
     normal_vecs,
     [interface_left_nodes, interface_right_nodes],
     quiver_alpha=0.3,
+    savepath="examples/legacy/figures/ex2/normal_vectors.png",
 )
 
 #%% 3D plotting
@@ -188,7 +189,7 @@ plot_solution_comparison_3d(
     num_label="Numerical",
     exact_label="Exact",
     view_init=(20, -50),
-    savepath="examples/legacy/figures/ex2-3d.jpg",
+    savepath="examples/legacy/figures/ex2/3dplot.jpg"
 )
 
 #%% Root Mean Square Error
@@ -215,6 +216,4 @@ print("\n===============")
 print("Norm infinity = %1.4e" %ninf)
 print("===============")
 
-#%%
-# plt.savefig("figures/ex2.png", dpi=300, bbox_inches="tight")
 plt.show()

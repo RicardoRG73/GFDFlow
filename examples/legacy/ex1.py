@@ -72,18 +72,18 @@ U = sp.linalg.spsolve(K,F)
 plot_solution_2d(
     coords,
     U,
-    cmap="plasma",
+    cmap="inferno",
     levels=11,
     clabel=True,
-    savepath="examples/legacy/figures/ex1_contourf.jpg",
+    savepath="examples/legacy/figures/ex1/contourf.jpg",
 )
 
 plot_solution_3d(
     coords,
     U,
-    cmap="plasma",
+    cmap="inferno",
     view_init=(30, -120),
-    savepath="examples/legacy/figures/ex1-3d.jpg",
+    savepath="examples/legacy/figures/ex1/3dplot.jpg",
 )
 
 plt.show()

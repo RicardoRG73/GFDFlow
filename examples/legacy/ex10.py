@@ -21,6 +21,8 @@ import calfem.vis_mpl as cfv
 
 from GFDFlow.utils import compute_normal_vectors
 from GFDFlow.visualization import (
+    plot_geometry,
+    plot_mesh,
     plot_nodes,
     plot_normal_vectors,
     plot_solution_2d,
@@ -33,23 +35,20 @@ from GFDFlow.visualization import (
 g = cfg.Geometry()          # geometry object
 
 # points
-    # square
-g.point([-1, -1])    # 0
-g.point([1, -1])    # 1
-g.point([1, 1])   # 2
-g.point([-1, 1])   # 3
-
-    # circle
-radius = 0.5
 interface_elsize = 0.5
-g.point([0, 0], el_size=interface_elsize)     # 4
-g.point([radius, 0], el_size=interface_elsize)    # 5
-g.point([0, radius], el_size=interface_elsize)    # 6
-g.point([-radius, 0], el_size=interface_elsize)    # 7
-g.point([0, -radius], el_size=interface_elsize)  # 8
+g.point([-1, -1])         # 0
+g.point([1, -1])         # 1
+g.point([1, 1])         # 2
+g.point([-1, 1])         # 3
+
+g.point([0, 0])         # 4 : center
+g.point([0, -0.5], el_size=interface_elsize)       # 5
+g.point([0.5, 0], el_size=interface_elsize)       # 6
+g.point([0, 0.5], el_size=interface_elsize)       # 7
+g.point([-0.5, 0], el_size=interface_elsize)      # 8
 
 # lines
-    # square
+    # boundary
 dird = 10
 dirr = 11
 diru = 12
@@ -73,9 +72,7 @@ g.surface([0, 1, 2, 3], [[4, 5, 6, 7]], marker=mat0)    # 0
 g.surface([4, 5, 6, 7], marker=mat1)    # 1
 
 # geometry plot
-cfv.figure(fig_size=(7,7))
-cfv.title('Geometry')
-cfv.draw_geometry(g)
+plot_geometry(g, title="Geometry", figsize=(7, 7), savepath="examples/legacy/figures/ex10/geometry.png")
 
 # =====
 # Mesh creation from geometry object
@@ -90,9 +87,16 @@ coords, edof, dofs, bdofs, elementmarkers = mesh.create()       # create the geo
 verts, faces, vertices_per_face, is_3d = cfv.ce2vf(coords, edof, mesh.dofs_per_node, mesh.el_type)  # coordinate-edges to vertices-faces
 
 # mesh plot
-cfv.figure(fig_size=(7,7))
-cfv.title('Mesh')
-cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
+plot_mesh(
+    coords=coords,
+    edof=edof,
+    dofs_per_node=mesh.dofs_per_node,
+    el_type=mesh.el_type,
+    filled=True,
+    figsize=(7, 7),
+    title="Mesh",
+    savepath="examples/legacy/figures/ex10/mesh.png",
+)
 
 # =====
 # Detection of boundary nodes index
@@ -132,6 +136,7 @@ plot_nodes(
     alpha=0.7,
     title="Nodes",
     legend_bbox=(1.05, 1),
+    savepath="examples/legacy/figures/ex10/nodes.png",
 )
 
 # normal vectors
@@ -139,7 +144,7 @@ normal_vecs = np.zeros((coords.shape[0],2))
 normal_vecs[bi] = compute_normal_vectors(bi, coords)
 
 # normal vectors plot
-plot_normal_vectors(coords, normal_vecs, bi)
+plot_normal_vectors(coords, normal_vecs, bi, savepath="examples/legacy/figures/ex10/normal_vectors.png")
 
 
 # =====
@@ -185,20 +190,22 @@ U = sp.linalg.spsolve(K,F)
 plot_solution_3d(
     coords, U,
     triangles=faces,
-    cmap="plasma",
+    cmap="inferno",
     edge_color="k",
     alpha=0.7,
     title="3D Solution",
     figsize=(7, 7),
+    savepath="examples/legacy/figures/ex10/3dplot_steady.png",
 )
 
 plot_solution_2d(
     coords, U,
     levels=20,
-    cmap="plasma",
+    cmap="inferno",
     title="Contour Solution",
     figsize=(7, 7),
     overlay_nodes=bi,
+    savepath="examples/legacy/figures/ex10/contourf_steady.png",
 )
 
 
@@ -232,21 +239,23 @@ for i in range(m-1):
 plot_solution_3d(
     coords, U2[-1],
     triangles=faces,
-    cmap="plasma",
+    cmap="inferno",
     edge_color="k",
     alpha=0.7,
     view_init=(35, -127),
     title=f"Crank-Nicolson, $t={T}$",
     figsize=(7, 7),
+    savepath="examples/legacy/figures/ex10/3dplot.png",
 )
 
 plot_solution_2d(
     coords, U2[-1],
     levels=20,
-    cmap="plasma",
+    cmap="inferno",
     title=f"Crank-Nicolson, $t={T}$",
     figsize=(7, 7),
     overlay_nodes=bi,
+    savepath="examples/legacy/figures/ex10/contourf.png",
 )
 
 
@@ -262,7 +271,7 @@ cont1 = ax1.plot_trisurf(
     coords[:,0],
     coords[:,1],
     U2[-1],
-    cmap="plasma"
+    cmap="inferno"
 )
 fig.colorbar(cont1)
 ax1.set_title("3D Solution")
@@ -272,7 +281,7 @@ cont2 = ax2.tricontourf(
     coords[:,0],
     coords[:,1],
     U2[-1],
-    cmap="plasma",
+    cmap="inferno",
     levels=20
 )
 fig.colorbar(cont2)
@@ -289,7 +298,7 @@ def update(frame):
         coords[:,0],
         coords[:,1],
         U2[frame],
-        cmap="plasma"
+        cmap="inferno"
     )
     ax1.set_title("3D Solution")
     ax1.axis("equal")
@@ -298,7 +307,7 @@ def update(frame):
         coords[:,0],
         coords[:,1],
         U2[frame],
-        cmap="plasma",
+        cmap="inferno",
         levels=20
     )
     ax2.set_title("Contour Solution")
@@ -310,7 +319,6 @@ def update(frame):
 
 ani = FuncAnimation(fig, update, frames=range(0, U2.shape[0], 10), blit=False, interval=24)
 
-# optional: save gif
-# ani.save("figures/ex10.gif", writer='pillow', fps=24)
-# plt.savefig("figures/ex10.png", dpi=300, bbox_inches="tight")
+ani.save("examples/legacy/figures/ex10/solution.gif", writer='pillow', fps=24)
+plt.savefig(f"examples/legacy/figures/ex10/solution_t={T}.png", dpi=300, bbox_inches="tight")
 plt.show()

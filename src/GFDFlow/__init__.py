@@ -1,5 +1,7 @@
 from .GFDM import GFDMI_2D_problem
 from .visualization import (
+    plot_geometry,
+    plot_mesh,
     plot_nodes,
     plot_normal_vectors,
     plot_phreatic_surface,
@@ -10,6 +12,8 @@ from .visualization import (
 
 __all__ = [
     "GFDMI_2D_problem",
+    "plot_geometry",
+    "plot_mesh",
     "plot_nodes",
     "plot_normal_vectors",
     "plot_phreatic_surface",

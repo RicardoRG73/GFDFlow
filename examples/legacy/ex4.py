@@ -118,11 +118,12 @@ fig, ax = plot_solution_2d(
     U,
     triangles=triangles,
     levels=50,
-    cmap="viridis",
+    cmap="inferno",
     colorbar_label="total head",
     title="Steady State Solution",
     figsize=(7, 3),
     line_alpha=0.3,
+    savepath="examples/legacy/figures/ex4/contourf.png",
 )
 plot_phreatic_surface(ax, coords, U, triangles=triangles, color="b", linewidths=2.0)
 plt.show()

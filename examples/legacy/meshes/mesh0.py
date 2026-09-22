@@ -125,39 +125,45 @@ if save_mesh_to_file:
 
 
 if show_plots:
+    from GFDFlow.visualization import (
+        plot_geometry,
+        plot_mesh,
+        plot_nodes,
+        plot_normal_vectors,
+    )
+
     # geometry plot
-    cfv.figure()
-    cfv.title('Geometry')
-    cfv.draw_geometry(geometry)
-    plt.savefig("examples/legacy/figures/ex0/geometry.png", dpi=300)
+    plot_geometry(geometry, title="Geometry", savepath="examples/legacy/figures/ex0/geometry.png")
 
     # mesh plot
-    cfv.figure(fig_size=(8,4))
-    cfv.title('Mesh')
-    cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
-    plt.savefig("examples/legacy/figures/ex0/mesh.png", dpi=300)
+    plot_mesh(
+        coords=coords,
+        edof=edof,
+        dofs_per_node=mesh.dofs_per_node,
+        el_type=mesh.el_type,
+        filled=True,
+        figsize=(8, 4),
+        title="Mesh",
+        savepath="examples/legacy/figures/ex0/mesh.png",
+    )
 
-    # ploting boundaries in different color
-    plt.figure()
-    for b,label in zip(nodes, labels):
-        plt.scatter(coords[b,0], coords[b,1], label=label)
-    plt.axis("equal")
-    plt.title("$N = %d$" %coords.shape[0])
-    plt.legend(loc="center")
-    plt.savefig("examples/legacy/figures/ex0/boundaries.png", dpi=300)
+    # plotting boundaries in different colors
+    plot_nodes(
+        coords,
+        zip(labels, nodes),
+        title=f"$N = {coords.shape[0]}$",
+        savepath="examples/legacy/figures/ex0/boundaries.png",
+    )
 
     # Plot normal vectors
-    plt.figure()
-    plt.quiver(
-        coords[right_nodes,0],
-        coords[right_nodes,1],
-        normal_vectors[right_nodes,0],
-        normal_vectors[right_nodes,1],
-        color="red",
-        alpha=0.5
+    plot_normal_vectors(
+        coords,
+        normal_vectors,
+        boundary_nodes=right_nodes,
+        quiver_color="red",
+        quiver_alpha=0.5,
+        title="Normal vectors",
+        savepath="examples/legacy/figures/ex0/normal_vectors.png",
     )
-    plt.axis("equal")
-    plt.title("Normal vectors")
-    plt.savefig("examples/legacy/figures/ex0/normal_vectors.png", dpi=300)
 
     plt.show()

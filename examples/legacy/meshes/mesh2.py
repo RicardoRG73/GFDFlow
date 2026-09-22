@@ -172,32 +172,40 @@ if save_mesh_to_file:
         data_to_save[label.replace(" ","_").replace("-","_").lower()+"_nodes"] = b.tolist()
     data_to_save["coords"] = coords.tolist()
     data_to_save["triangles"] = faces.tolist()
-    with open('Examples/Meshes/mesh2.json', 'w') as file:
+    with open('examples/legacy/meshes/mesh2.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)
     print("\n ============\n Mesh saved \n ============")
 
 
 if show_plots:
+    from GFDFlow.visualization import (
+        plot_geometry,
+        plot_mesh,
+        plot_nodes,
+    )
+
     # geometry plot
-    cfv.figure(fig_size=(4,4))
-    cfv.title('Geometry')
-    cfv.draw_geometry(geometry)
-    # plt.savefig("figures/03geometry.jpg", dpi=300)
+    plot_geometry(geometry, title="Geometry", figsize=(4, 4), savepath="examples/legacy/figures/ex2/geometry.png")
 
     # mesh plot
-    cfv.figure(fig_size=(8,4))
-    cfv.title('Mesh')
-    cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
-    # plt.savefig("figures/03mesh.jpg", dpi=300)
+    plot_mesh(
+        coords=coords,
+        edof=edof,
+        dofs_per_node=mesh.dofs_per_node,
+        el_type=mesh.el_type,
+        filled=True,
+        figsize=(8, 4),
+        title="Mesh",
+        savepath="examples/legacy/figures/ex2/mesh.png"
+    )
 
-    # ploting boundaries in different colors
-    plt.figure()
-    for b,label in zip(nodes, labels):
-        plt.scatter(coords[b,0], coords[b,1], label=label, alpha=0.5)
-    plt.axis("equal")
-    plt.title("$N = %d$" %coords.shape[0])
-    plt.legend()
-    # plt.savefig("figures/03nodes.jpg", dpi=300)
-
+    # plotting boundaries in different colors
+    plot_nodes(
+        coords,
+        zip(labels, nodes),
+        title=f"$N = {coords.shape[0]}$",
+        alpha=0.5,
+        savepath="examples/legacy/figures/ex2/nodes.png"
+    )
 
     plt.show()

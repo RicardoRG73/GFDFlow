@@ -96,15 +96,22 @@ U = sp.linalg.spsolve(K,F)
 # Plotting U
 # =============================================================================
 # 3D
-plot_solution_3d(coords, U, cmap="plasma", title=r"Stationary solution $\nabla^2 u = 0$")
+plot_solution_3d(
+    coords,
+    U,
+    cmap="inferno",
+    title=r"Stationary solution $\nabla^2 u = 0$",
+    savepath="examples/legacy/figures/ex3/3dplot_stationary.png",
+)
 
 #%% contourf with phreatic line
 fig, ax = plot_solution_2d(
     coords,
     U,
-    cmap="plasma",
+    cmap="inferno",
     levels=20,
     title=r"Stationary solution $\nabla^2 u = 0$",
+    savepath="examples/legacy/figures/ex3/contourf_stationary.png",
 )
 plot_phreatic_surface(ax, coords, U, color="b")
 
@@ -120,7 +127,13 @@ U0[left_nodes] = 8
 U0[right_nodes] = 0
 
 #%% initial condition plot
-plot_solution_3d(coords, U0, cmap="plasma", title="Initial Condition $U_0$")
+plot_solution_3d(
+    coords,
+    U0,
+    cmap="inferno",
+    title="Initial Condition $U_0$",
+    savepath="examples/legacy/figures/ex3/3dplot_u0.png",
+)
 
 #%% solution
 sol = solve_ivp(fun, t, U0)
@@ -139,7 +152,7 @@ for i,t_i in enumerate(times_index):
         coords,
         U_difussion[:,t_i],
         levels=20,
-        cmap="plasma",
+        cmap="inferno",
         colorbar=False,
         contour_lines=False,
         ax=ax,
@@ -147,17 +160,18 @@ for i,t_i in enumerate(times_index):
     )
     plot_phreatic_surface(ax, coords, U_difussion[:,t_i], color="k", linewidths=0.5, label=None)
 
+fig.savefig("examples/legacy/figures/ex3/diffusion_steps.png", dpi=300, bbox_inches="tight")
+
 #%% 3d plot at final time
 plot_solution_3d(
     coords,
     U_difussion[:,final_index],
-    cmap="plasma",
+    cmap="inferno",
     title=f"Solution $U$ at time $t={sol.t[-1]:1.2f}$",
-    savepath="examples/legacy/figures/ex3-3d.jpg",
+    savepath="examples/legacy/figures/ex3/3dplot.png",
 )
 
 # condition number
 print("\n\n Condition number cond(K): %1.3e" %np.linalg.cond(K.toarray()))
 
-# plt.savefig("figures/ex3.png", dpi=300, bbox_inches="tight")
 plt.show()

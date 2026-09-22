@@ -54,7 +54,7 @@ def run_example():
     
     # 7. Plot results
     plt.figure(figsize=(8, 6))
-    cont = plt.tricontourf(coords[:, 0], coords[:, 1], triangles, U, cmap="plasma", levels=20)
+    cont = plt.tricontourf(coords[:, 0], coords[:, 1], triangles, U, cmap="inferno", levels=20)
     plt.colorbar(cont, label="u")
     plt.title("GFDM Solution for 2D Laplacian")
     plt.xlabel("x")

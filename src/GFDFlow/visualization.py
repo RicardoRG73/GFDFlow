@@ -54,7 +54,7 @@ def plot_solution_2d(
     u: npt.NDArray[np.float64],
     triangles: Optional[npt.NDArray[np.int_]] = None,
     levels: Union[int, npt.ArrayLike] = 20,
-    cmap: str = "plasma",
+    cmap: str = "inferno",
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
     contour_lines: bool = True,
@@ -85,7 +85,7 @@ def plot_solution_2d(
         triangulation is performed internally by Matplotlib.
     levels : int or array-like, default=20
         Number or sequence of contour levels.
-    cmap : str, default='plasma'
+    cmap : str, default='inferno'
         Colormap name.
     colorbar : bool, default=True
         Whether to draw a colorbar.
@@ -188,7 +188,7 @@ def plot_solution_3d(
     coords: npt.NDArray[np.float64],
     u: npt.NDArray[np.float64],
     triangles: Optional[npt.NDArray[np.int_]] = None,
-    cmap: str = "plasma",
+    cmap: str = "inferno",
     colorbar: bool = True,
     colorbar_label: Optional[str] = None,
     view_init: Optional[Tuple[float, float]] = (30, -120),
@@ -213,7 +213,7 @@ def plot_solution_3d(
         Array of shape (N,) with the solution values at each node.
     triangles : Optional[npt.NDArray[np.int_]], default=None
         Optional triangle connectivity matrix of shape (M, 3).
-    cmap : str, default='plasma'
+    cmap : str, default='inferno'
         Colormap name.
     colorbar : bool, default=True
         Whether to show a colorbar.
@@ -369,11 +369,153 @@ def plot_solution_comparison_3d(
     return fig, ax
 
 
+def plot_geometry(
+    geometry: Any,
+    draw_axis: bool = True,
+    font_size: int = 12,
+    ax: Optional[Axes] = None,
+    figsize: Tuple[float, float] = (8, 6),
+    title: Optional[str] = "Geometry",
+    savepath: Optional[str] = None,
+    **kwargs: Any,
+) -> Tuple[Figure, Axes]:
+    """Plot a CALFEM/Gmsh Geometry object.
+
+    Parameters
+    ----------
+    geometry : Any
+        CALFEM Geometry object (`calfem.geometry.Geometry`).
+    draw_axis : bool, default=True
+        Whether to draw coordinate axes.
+    font_size : int, default=12
+        Font size for geometry annotations.
+    ax : Optional[Axes], default=None
+        Existing Matplotlib Axes object.
+    figsize : Tuple[float, float], default=(8, 6)
+        Figure size in inches.
+    title : Optional[str], default='Geometry'
+        Plot title.
+    savepath : Optional[str], default=None
+        File path to save the figure image.
+    **kwargs : Any
+        Additional arguments passed to `cfv.draw_geometry`.
+
+    Returns
+    -------
+    Tuple[Figure, Axes]
+        The Matplotlib Figure and Axes objects.
+    """
+    try:
+        import calfem.vis_mpl as cfv
+    except ImportError as err:
+        raise ImportError(
+            "calfem-python is required to plot calfem.geometry.Geometry objects. "
+            "Install it via `pip install calfem-python`."
+        ) from err
+
+    fig, ax = _ensure_ax_2d(ax, figsize=figsize)
+
+    cfv.show_and_draw = False
+    cfv.draw_geometry(geometry, draw_axis=draw_axis, font_size=font_size, **kwargs)
+
+    if title:
+        ax.set_title(title)
+
+    _save_fig_if_needed(fig, savepath)
+    return fig, ax
+
+
+def plot_mesh(
+    coords: npt.NDArray[np.float64],
+    edof: Optional[npt.NDArray[np.int_]] = None,
+    triangles: Optional[npt.NDArray[np.int_]] = None,
+    dofs_per_node: int = 1,
+    el_type: int = 2,
+    filled: bool = True,
+    ax: Optional[Axes] = None,
+    figsize: Tuple[float, float] = (8, 6),
+    title: Optional[str] = "Mesh",
+    suptitle: Optional[str] = None,
+    savepath: Optional[str] = None,
+    **kwargs: Any,
+) -> Tuple[Figure, Axes]:
+    """Plot a 2D finite element / GFDM mesh.
+
+    Supports both CALFEM `(coords, edof, dofs_per_node, el_type)` mesh format
+    and standard numpy `(coords, triangles)` format.
+
+    Parameters
+    ----------
+    coords : npt.NDArray[np.float64]
+        Array of shape (N, 2) containing node coordinates [x, y].
+    edof : Optional[npt.NDArray[np.int_]], default=None
+        CALFEM element degrees-of-freedom matrix.
+    triangles : Optional[npt.NDArray[np.int_]], default=None
+        Triangle connectivity matrix of shape (M, 3).
+    dofs_per_node : int, default=1
+        Degrees of freedom per node (for CALFEM draw_mesh).
+    el_type : int, default=2
+        Element type (2 = triangle, for CALFEM draw_mesh).
+    filled : bool, default=True
+        Whether to fill mesh elements.
+    ax : Optional[Axes], default=None
+        Existing Matplotlib Axes object.
+    figsize : Tuple[float, float], default=(8, 6)
+        Figure size in inches.
+    title : Optional[str], default='Mesh'
+        Plot title.
+    suptitle : Optional[str], default=None
+        Figure super title (subtitle).
+    savepath : Optional[str], default=None
+        File path to save the figure image.
+    **kwargs : Any
+        Additional keyword arguments passed to `cfv.draw_mesh` or `ax.triplot`.
+
+    Returns
+    -------
+    Tuple[Figure, Axes]
+        The Matplotlib Figure and Axes objects.
+    """
+    fig, ax = _ensure_ax_2d(ax, figsize=figsize)
+
+    if edof is not None:
+        try:
+            import calfem.vis_mpl as cfv
+            cfv.show_and_draw = False
+            cfv.draw_mesh(
+                coords=coords,
+                edof=edof,
+                dofs_per_node=dofs_per_node,
+                el_type=el_type,
+                filled=filled,
+                **kwargs,
+            )
+        except ImportError:
+            edof = None
+
+    if edof is None:
+        x, y = coords[:, 0], coords[:, 1]
+        if triangles is not None:
+            ax.triplot(x, y, triangles, **kwargs)
+        else:
+            ax.plot(x, y, "o", **kwargs)
+        ax.set_aspect("equal")
+
+    if title:
+        ax.set_title(title)
+    if suptitle:
+        fig.suptitle(suptitle, fontsize=8, y=0.90)
+
+    _save_fig_if_needed(fig, savepath)
+    return fig, ax
+
+
 def plot_nodes(
     coords: npt.NDArray[np.float64],
     node_groups: Union[Dict[str, npt.ArrayLike], Iterable[Tuple[str, npt.ArrayLike]]],
     point_size: float = 20.0,
     alpha: float = 0.7,
+    colors: Optional[Union[List[str], Tuple[str, ...]]] = None,
     legend: bool = True,
     legend_bbox: Optional[Tuple[float, float]] = None,
     ax: Optional[Axes] = None,
@@ -397,6 +539,8 @@ def plot_nodes(
         Scatter marker size.
     alpha : float, default=0.7
         Point transparency.
+    colors : Optional[Union[List[str], Tuple[str, ...]]], default=None
+        Optional list/tuple of color specifications matching node_groups order.
     legend : bool, default=True
         Whether to show the legend.
     legend_bbox : Optional[Tuple[float, float]], default=None
@@ -424,12 +568,23 @@ def plot_nodes(
     x = coords[:, 0]
     y = coords[:, 1]
 
-    items = node_groups.items() if isinstance(node_groups, dict) else node_groups
-    for label, node_indices in items:
+    items = node_groups.items() if isinstance(node_groups, dict) else list(node_groups)
+    for idx_group, item in enumerate(items):
+        if isinstance(item, tuple) and len(item) == 2:
+            label, node_indices = item
+        else:
+            label, node_indices = f"Group {idx_group}", item
+
         idx = np.asarray(node_indices, dtype=int).ravel()
         if idx.size == 0:
             continue
-        ax.scatter(x[idx], y[idx], s=point_size, label=label, alpha=alpha, **kwargs)
+
+        scatter_kwargs = {"s": point_size, "label": label, "alpha": alpha}
+        if colors is not None and idx_group < len(colors):
+            scatter_kwargs["color"] = colors[idx_group]
+        scatter_kwargs.update(kwargs)
+
+        ax.scatter(x[idx], y[idx], **scatter_kwargs)
 
     if title:
         ax.set_title(title)
@@ -560,7 +715,7 @@ def plot_phreatic_surface(
     label: Optional[str] = "Phreatic surface",
     **kwargs: Any,
 ) -> None:
-    """Superimpose a phreatic surface contour (pore pressure = 0) on an existing 2D plot.
+    r"""Superimpose a phreatic surface contour (pore pressure = 0) on an existing 2D plot.
 
     Computes the pressure head $(u - y) \cdot g$ and draws the zero contour level.
 

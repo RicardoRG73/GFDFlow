@@ -142,56 +142,55 @@ if save_mesh_to_file:
 
 
 if show_figures:
+    from GFDFlow.visualization import (
+        plot_geometry,
+        plot_mesh,
+        plot_nodes,
+        plot_normal_vectors,
+    )
+
     # geometry plot
-    plt.figure(figsize=(8,3))
-    cfv.draw_geometry(g,draw_axis=True)
-    plt.title("Geometry")
+    plot_geometry(g, title="Geometry", figsize=(8, 3), savepath="examples/legacy/figures/ex7/geometry.png")
 
     # mesh plot
-    plt.figure(figsize=(8,3))
-    cfv.draw_mesh(
+    plot_mesh(
         coords=coords,
         edof=edof,
         dofs_per_node=mesh.dofs_per_node,
         el_type=mesh.el_type,
-        filled=True
+        filled=True,
+        figsize=(8, 3),
+        title="Mesh",
+        suptitle=f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes",
+        savepath="examples/legacy/figures/ex7/mesh.png",
     )
-    plt.title(f"Mesh")
-    plt.suptitle(f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes", fontsize=8, y=0.90)
 
     # nodes by color plot
-    plt.figure(figsize=(8,3))
-    for nodes, label in zip(nodes_to_plot, labels):
-        plt.scatter(
-            coords[nodes, 0],
-            coords[nodes, 1],
-            label=label,
-        s=20,
-        alpha=1
+    plot_nodes(
+        coords,
+        zip(labels, nodes_to_plot),
+        title=f"$N = {coords.shape[0]}$",
+        alpha=1.0,
+        point_size=20,
+        figsize=(8, 3),
+        savepath="examples/legacy/figures/ex7/nodes.png",
     )
-    plt.axis("equal")
-    plt.legend()
 
     # normal vectors plot
-    plt.figure()
-    nodes_to_plot = (
+    b_nodes_tuple = (
         bottom_nodes,
         right_nodes,
         top_right_nodes,
         top_middle_nodes,
         top_left_nodes,
-        left_nodes
+        left_nodes,
     )
-    for b in nodes_to_plot:
-        plt.scatter(coords[b,0], coords[b,1])
-        plt.quiver(
-            coords[b,0],
-            coords[b,1],
-            normal_vecs[b,0],
-            normal_vecs[b,1]
-        )
-    plt.title("Normal vectors")
-    plt.axis("equal")
-
+    plot_normal_vectors(
+        coords,
+        normal_vecs,
+        boundary_nodes=b_nodes_tuple,
+        title="Normal vectors",
+        savepath="examples/legacy/figures/ex7/normal_vectors.png",
+    )
 
     plt.show()

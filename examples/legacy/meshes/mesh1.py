@@ -170,35 +170,46 @@ if save_mesh_to_file:
 
 
 if show_plots:
-    #%% geometry plot
-    cfv.figure(fig_size=(8,4))
-    cfv.title('Geometry')
-    cfv.draw_geometry(geometry)
-    # plt.savefig("figures/01geometry.jpg", dpi=300)
+    from GFDFlow.visualization import (
+        plot_geometry,
+        plot_mesh,
+        plot_nodes,
+        plot_normal_vectors,
+    )
 
-    #%% mesh plot
-    cfv.figure(fig_size=(8,4))
-    cfv.title('Mesh')
-    cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
-    # plt.savefig("figures/01mesh.jpg", dpi=300)
+    # geometry plot
+    plot_geometry(geometry, title="Geometry", figsize=(8, 4), savepath="examples/legacy/figures/ex1/geometry.png")
 
-    #%% ploting boundaries in different colors
-    plt.figure()
-    for b,label in zip(nodes, labels):
-        plt.scatter(coords[b,0], coords[b,1], label=label, alpha=0.5, s=20)
-    plt.axis("equal")
-    plt.title("$N = %d$" %coords.shape[0])
-    plt.legend(loc="center")
-    # plt.savefig("figures/01nodes.jpg", dpi=300)
+    # mesh plot
+    plot_mesh(
+        coords=coords,
+        edof=edof,
+        dofs_per_node=mesh.dofs_per_node,
+        el_type=mesh.el_type,
+        filled=True,
+        figsize=(8, 4),
+        title="Mesh",
+        savepath="examples/legacy/figures/ex1/mesh.png"
+    )
 
-    #%% normal vectors plot
-    plt.figure()
-    for boundary in nodes_to_compute_normals:
-        plt.scatter(coords[boundary,0], coords[boundary,1], alpha=0.5)
-        plt.quiver(coords[boundary,0], coords[boundary,1], normal_vecs[boundary,0], normal_vecs[boundary,1], alpha=0.5)
-    plt.title("Normal Vectors")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.axis("equal")
+    # plotting boundaries in different colors
+    plot_nodes(
+        coords,
+        zip(labels, nodes),
+        title=f"$N = {coords.shape[0]}$",
+        alpha=0.5,
+        point_size=20,
+        savepath="examples/legacy/figures/ex1/nodes.png"
+    )
+
+    # normal vectors plot
+    plot_normal_vectors(
+        coords,
+        normal_vecs,
+        boundary_nodes=nodes_to_compute_normals,
+        quiver_alpha=0.5,
+        title="Normal Vectors",
+        savepath="examples/legacy/figures/ex1/normal_vectors.png"
+    )
 
     plt.show()

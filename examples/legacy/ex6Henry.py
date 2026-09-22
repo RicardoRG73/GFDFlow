@@ -210,9 +210,10 @@ plot_solution_2d(
     U[N:, -1],
     triangles=faces,
     levels=20,
-    cmap="jet",
+    cmap="inferno",
     colorbar_label="Concentration C",
     title=f"Henry Problem - Final Concentration C (t={t_final})",
+    savepath="examples/legacy/figures/ex6/contourf.png",
 )
 plt.show()
 

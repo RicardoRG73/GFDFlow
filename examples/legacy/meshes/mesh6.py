@@ -131,44 +131,46 @@ if save_mesh_to_file:
 # Plot figures
 # =============================================================================
 if show_figures:
+    from GFDFlow.visualization import (
+        plot_geometry,
+        plot_mesh,
+        plot_nodes,
+        plot_normal_vectors,
+    )
+
     # geometry plot
-    cfv.figure(fig_size=(8,5))
-    cfv.title('Geometría')
-    cfv.draw_geometry(geometria, font_size=16, draw_axis=True)
+    plot_geometry(geometria, title="Geometría", font_size=16, figsize=(8, 5), savepath="examples/legacy/figures/ex6/geometry.png")
 
     # mesh plot
-    plt.figure(figsize=(7,4))
-    cfv.title('Malla $N=%d' %coords.shape[0] +'$')
-    cfv.draw_mesh(
+    plot_mesh(
         coords=coords,
         edof=edof,
         dofs_per_node=mesh.dofs_per_node,
         el_type=mesh.el_type,
-        filled=True
+        filled=True,
+        figsize=(7, 4),
+        title=f"Malla $N={coords.shape[0]}$",
+        savepath="examples/legacy/figures/ex6/mesh.png",
     )
 
     # nodes plot by color
-    plt.figure(figsize=(7,4))
-    for nodes, label in zip(nodes_to_plot, labels):
-        plt.scatter(
-            coords[nodes, 0],
-            coords[nodes, 1],
-            label=label,
-            s=10,
-            alpha=0.5
-        )
-    plt.axis('equal')
-    plt.legend()
+    plot_nodes(
+        coords,
+        zip(labels, nodes_to_plot),
+        title=f"$N = {coords.shape[0]}$",
+        alpha=0.5,
+        point_size=10,
+        figsize=(7, 4),
+        savepath="examples/legacy/figures/ex6/nodes.png",
+    )
 
     # normal vectors plot
-    plt.figure()
-    for b in nodes_to_compute:
-        plt.scatter(coords[b,0], coords[b,1])
-        plt.quiver(
-            coords[b,0],
-            coords[b,1],
-            normal_vecs[b,0],
-            normal_vecs[b,1]
-        )
-    plt.axis('equal')
+    plot_normal_vectors(
+        coords,
+        normal_vecs,
+        boundary_nodes=nodes_to_compute,
+        title="Normal Vectors",
+        savepath="examples/legacy/figures/ex6/normal_vectors.png",
+    )
+
     plt.show()

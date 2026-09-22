@@ -99,12 +99,13 @@ plot_solution_2d(
     U,
     triangles=triangles,
     levels=25,
-    cmap="viridis",
+    cmap="inferno",
     colorbar_label="Concentration (mg/L)",
     title="Concentration Distribution",
     xlabel="X (m)",
     ylabel="Y (m)",
     figsize=(10, 10),
     overlay_nodes=interface_overlay,
+    savepath="examples/legacy/figures/ex11/contourf.png",
 )
 plt.show()

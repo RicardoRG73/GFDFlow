@@ -28,6 +28,8 @@ import calfem.vis_mpl as cfv
 
 from GFDFlow.utils import compute_normal_vectors
 from GFDFlow.visualization import (
+    plot_geometry,
+    plot_mesh,
     plot_nodes,
     plot_normal_vectors,
     plot_solution_2d,
@@ -77,9 +79,7 @@ g.surface([1, 2, 7, 6], marker=mat1)    # 1
 g.surface([3, 4, 5, 7], marker=mat2)    # 2
 
 # geometry plot
-cfv.figure(fig_size=(7,7))
-cfv.title('Geometry')
-cfv.draw_geometry(g)
+plot_geometry(g, title="Geometry", figsize=(7, 7), savepath="examples/legacy/figures/ex9/geometry.png")
 
 # =====
 # Mesh creation from geometry object
@@ -94,9 +94,16 @@ coords, edof, dofs, bdofs, elementmarkers = mesh.create()       # create the geo
 verts, faces, vertices_per_face, is_3d = cfv.ce2vf(coords, edof, mesh.dofs_per_node, mesh.el_type)  # coordinate-edges to vertices-faces
 
 # mesh plot
-cfv.figure(fig_size=(7,7))
-cfv.title('Mesh')
-cfv.draw_mesh(coords=coords, edof=edof, dofs_per_node=mesh.dofs_per_node, el_type=mesh.el_type, filled=True)
+plot_mesh(
+    coords=coords,
+    edof=edof,
+    dofs_per_node=mesh.dofs_per_node,
+    el_type=mesh.el_type,
+    filled=True,
+    figsize=(7, 7),
+    title="Mesh",
+    savepath="examples/legacy/figures/ex9/mesh.png",
+)
 
 # =====
 # Detection of boundary and interior nodes
@@ -140,6 +147,7 @@ plot_nodes(
     figsize=(7, 7),
     point_size=10,
     alpha=0.7,
+    savepath="examples/legacy/figures/ex9/nodes.png",
 )
 
 # normal vectors
@@ -155,6 +163,7 @@ plot_normal_vectors(
     coords,
     normal_vecs,
     [interf0_nodes, interf1_nodes, interf2_nodes, [5]],
+    savepath="examples/legacy/figures/ex9/normal_vectors.png",
 )
 
 # =====
@@ -207,7 +216,7 @@ plot_solution_2d(
     U,
     triangles=faces,
     levels=25,
-    cmap="plasma",
+    cmap="inferno",
     colorbar_label="total head",
     title="Steady State Solution",
     figsize=(7, 7),
@@ -219,17 +228,19 @@ plot_solution_2d(
         "interface2": interf2_nodes,
         "center": [5]
     },
+    savepath="examples/legacy/figures/ex9/contourf.png",
 )
 
 plot_solution_3d(
     coords,
     U,
     triangles=faces,
-    cmap="viridis",
+    cmap="inferno",
     edge_color="k",
     alpha=0.7,
     title="3D Solution",
     figsize=(7, 7),
+    savepath="examples/legacy/figures/ex9/3dplot.png",
 )
 
 plt.show()

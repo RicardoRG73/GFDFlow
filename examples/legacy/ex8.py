@@ -18,6 +18,8 @@ import calfem.vis_mpl as cfv
 from GFDFlow.utils import compute_normal_vectors
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 from GFDFlow.visualization import (
+    plot_geometry,
+    plot_mesh,
     plot_nodes,
     plot_normal_vectors,
     plot_solution_2d,
@@ -60,9 +62,7 @@ g.spline([11,0], marker=neumann)
 g.surface([0,1,2,3,4,5,6,7,8,9,10,11])
 
 # geometry plot
-plt.figure(figsize=(8,3))
-cfv.draw_geometry(g,draw_axis=True)
-plt.title("Geometry")
+plot_geometry(g, title="Geometry", figsize=(8, 3), savepath="examples/legacy/figures/ex8/geometry.png")
 
 
 # mesh generation
@@ -76,16 +76,17 @@ verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
     mesh.el_type
 )
 
-plt.figure(figsize=(8,3))
-cfv.draw_mesh(
+plot_mesh(
     coords=coords,
     edof=edof,
     dofs_per_node=mesh.dofs_per_node,
     el_type=mesh.el_type,
-    filled=True
+    filled=True,
+    figsize=(8, 3),
+    title="Mesh",
+    suptitle=f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes",
+    savepath="examples/legacy/figures/ex8/mesh.png",
 )
-plt.title(f"Mesh")
-plt.suptitle(f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes", fontsize=8, y=0.90)
 
 
 #%% nodes identification
@@ -112,6 +113,7 @@ plot_nodes(
     },
     figsize=(7, 4),
     alpha=0.5,
+    savepath="examples/legacy/figures/ex8/nodes.png",
 )
 
 #%% Normal vectors computation
@@ -128,6 +130,7 @@ plot_normal_vectors(
     neumann_nodes,
     quiver_color="red",
     quiver_alpha=0.3,
+    savepath="examples/legacy/figures/ex8/normal_vectors.png",
 )
 
 
@@ -161,6 +164,7 @@ fig, ax = plot_solution_2d(
     colorbar_label="h",
     figsize=(10, 4),
     linewidths=1,
+    savepath="examples/legacy/figures/ex8/contourf.png",
 )
 
 # pile sheet region
