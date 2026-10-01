@@ -28,6 +28,15 @@ import calfem.vis_mpl as cfv
 
 from scipy.sparse.linalg import spsolve
 
+from GFDFlow import (
+    GFDMI_2D_problem as gfdmi,
+    plot_geometry,
+    plot_mesh,
+    plot_nodes,
+    plot_normal_vectors,
+    plot_solution_2d,
+    plot_solution_3d,
+)
 from GFDFlow.utils import compute_normal_vectors
 
 # %% [markdown]
@@ -109,8 +118,7 @@ g.surface([7,8,9,10], marker=left_circ_surf_mark)
 g.surface([4,5,6,1], [[11,12,13,14]], marker=right_half_mark)
 
 # geometry plot
-plt.figure(figsize=(8,3))
-cfv.draw_geometry(g,draw_axis=True)
+plot_geometry(g, figsize=(8, 3))
 
 # %% [markdown]
 # # Mesh
@@ -128,13 +136,13 @@ verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
     mesh.el_type
 )
 
-plt.figure(figsize=(8,3))
-cfv.draw_mesh(
+plot_mesh(
     coords=coords,
     edof=edof,
     dofs_per_node=mesh.dofs_per_node,
     el_type=mesh.el_type,
-    filled=True
+    filled=True,
+    figsize=(8, 3),
 )
 
 # %%
@@ -195,40 +203,21 @@ right_half_nodes = right_half_nodes.flatten()
 right_half_nodes = np.setdiff1d(right_half_nodes, boundary_nodes)
 
 # plotting
-plt.figure(figsize=(16,6))
-boundaries_to_plot = (
-    left_nodes,
-    right_nodes,
-    interface_nodes,
-    left_top_nodes,
-    left_bottom_nodes,
-    right_top_nodes,
-    right_bottom_nodes,
-    left_circ_nodes,
-    right_circ_nodes,
-    left_half_nodes,
-    left_circ_mat_nodes,
-    right_half_nodes
-)
-labels_to_plot = (
-    "Left boundary",
-    "Right boundary",
-    "Interface",
-    "Left-Top boundary",
-    "Left-Bottom boundary",
-    "Right-Top boundary",
-    "Right-Bottom boundary",
-    "Left circle interface",
-    "Right circle interface",
-    "Left material",
-    "Left circle material",
-    "Right material"
-)
-for b,label in zip(boundaries_to_plot, labels_to_plot):
-    plt.scatter(coords[b,0], coords[b,1], label=label, s=20)
-
-plt.axis("equal")
-plt.legend(loc="center")
+node_groups = {
+    "Left boundary": left_nodes,
+    "Right boundary": right_nodes,
+    "Interface": interface_nodes,
+    "Left-Top boundary": left_top_nodes,
+    "Left-Bottom boundary": left_bottom_nodes,
+    "Right-Top boundary": right_top_nodes,
+    "Right-Bottom boundary": right_bottom_nodes,
+    "Left circle interface": left_circ_nodes,
+    "Right circle interface": right_circ_nodes,
+    "Left material": left_half_nodes,
+    "Left circle material": left_circ_mat_nodes,
+    "Right material": right_half_nodes,
+}
+plot_nodes(coords, node_groups, point_size=20, figsize=(16, 6))
 
 # %%
 # computing normal vectors
@@ -246,18 +235,14 @@ for nodes in nodes_to_compute:
 
 # %%
 # plotting normal vectors
-plt.figure()
-for nodes in nodes_to_compute:
-    plt.scatter(coords[nodes,0], coords[nodes,1])
-    plt.quiver(
-        coords[nodes,0],
-        coords[nodes,1],
-        normal_vecs[nodes,0],
-        normal_vecs[nodes,1],
-        alpha=0.5
-    )
-
-plt.axis("equal")
+plot_normal_vectors(
+    coords,
+    normal_vecs,
+    boundary_nodes=nodes_to_compute,
+    point_size=20,
+    quiver_alpha=0.5,
+    figsize=(8, 4),
+)
 
 
 # %% [markdown]
@@ -282,7 +267,6 @@ right_dirichlet = lambda p: 0
 beta = lambda p: 0
 
 # Problem Assembling
-from GFDFlow import GFDMI_2D_problem as gfdmi
 
 problem = gfdmi(
     coords,
@@ -347,37 +331,35 @@ U = spsolve(K,F)
 # # Plotting solution
 
 # %%
-right_circ_nodes
-
-# %%
-plt.figure(figsize=(10,4))
-plt.tricontourf(coords[:,0], coords[:,1], U, levels=50, cmap="jet")
-plt.colorbar()
-plt.tricontour(coords[:,0], coords[:,1], U, levels=50, linewidths=1)
-# gray circle
-# plt.tricontourf(
-#     coords[right_circ_nodes,0],
-#     coords[right_circ_nodes,1],
-#     U[right_circ_nodes],
-#     levels=1
-# )
-
-# scatter plot for interfaces
-interfaces_to_plot = (
-    left_circ_nodes,
-    right_circ_nodes,
-    interface_nodes
+# 2D contour plot with interface nodes overlay
+overlay_interfaces = {
+    "Left circle": left_circ_nodes,
+    "Right circle": right_circ_nodes,
+    "Interface": interface_nodes,
+}
+plot_solution_2d(
+    coords,
+    U,
+    triangles=faces,
+    levels=50,
+    cmap="jet",
+    figsize=(10, 4),
+    overlay_nodes=overlay_interfaces,
+    title="Poisson 2D Solution with Interfaces",
+    savepath="examples/legacy/figures/ex5/contourf.png",
 )
-for b in interfaces_to_plot:
-    plt.scatter(coords[b,0], coords[b,1], s=20)
-
-plt.axis("equal")
 
 # %%
-fig = plt.figure(figsize=(4,4))
-ax = plt.axes(projection="3d")
-ax.plot_trisurf(coords[:,0], coords[:,1], U, cmap="jet")
-ax.plot_trisurf(coords[:,0], coords[:,1], U, edgecolor="k", alpha=0)
-ax.view_init(30,-70)
+# 3D surface plot
+plot_solution_3d(
+    coords,
+    U,
+    triangles=faces,
+    cmap="jet",
+    view_init=(30, -70),
+    figsize=(6, 5),
+    title="3D Solution",
+    savepath="examples/legacy/figures/ex5/3dplot.png",
+)
 
 plt.show()
