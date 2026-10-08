@@ -1,4 +1,4 @@
-show_figures = True
+show_figures = False
 save_mesh_to_file = True
 
 #%%
@@ -16,6 +16,8 @@ plt.rcParams["legend.framealpha"] = 0.1
 import calfem.geometry as cfg
 import calfem.mesh as cfm
 import calfem.vis_mpl as cfv
+
+from GFDFlow.utils import get_support_nodes_2D, compute_M_matrix, compute_M_matrix_neumann
 
 #%%
 # =============================================================================
@@ -124,6 +126,18 @@ normal_vecs[left_nodes]         = np.array([-1,0])
 
 
 
+M_pinv = {}
+support_stencils = {}
+
+for i in range(coords.shape[0]):
+    support_stencils[i] = get_support_nodes_2D(i, faces)
+    if np.linalg.norm(normal_vecs[i]) > 1e-10:
+        M = compute_M_matrix_neumann(i, support_stencils[i], coords, normal_vecs[i])
+    else:
+        M = compute_M_matrix(i, support_stencils[i], coords)
+    M_pinv[i] = np.linalg.pinv(M)
+
+
 if save_mesh_to_file:
     import json
     data_to_save = {}
@@ -133,6 +147,8 @@ if save_mesh_to_file:
     data_to_save["triangles"] = faces.tolist()
     data_to_save["boundary_nodes"] = boundary_nodes.tolist()
     data_to_save["normal_vecs"] = normal_vecs.tolist()
+    data_to_save["M_pinv"] = {str(k): v.tolist() for k, v in M_pinv.items()}
+    data_to_save["support_stencils"] = {str(k): v.tolist() for k, v in support_stencils.items()}
 
     with open('examples/legacy/meshes/mesh7.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)

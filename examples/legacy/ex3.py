@@ -24,7 +24,11 @@ with open("examples/legacy/meshes/mesh3.json","r") as f:
     mesh_data = json.load(f)
 
 for key in mesh_data.keys():
-    globals()[key] = np.array(mesh_data[key])
+    if key not in ["M_pinv", "support_stencils"]:
+        globals()[key] = np.array(mesh_data[key])
+
+support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 #%%
 # =============================================================================
@@ -48,7 +52,9 @@ problem = gfdmi(
     triangles,
     normal_vecs,
     L,
-    source
+    source,
+    M_pinv=M_pinv,
+    support_stencils=support_stencils
 )
 
 problem.material("rock", kr, rock_nodes)

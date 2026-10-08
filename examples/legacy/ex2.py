@@ -61,7 +61,11 @@ with open('examples/legacy/meshes/mesh2.json', 'r') as file:
     loaded_data = json.load(file)
 
 for key in loaded_data.keys():
-    globals()[key] = np.array(loaded_data[key])
+    if key not in ["M_pinv", "support_stencils"]:
+        globals()[key] = np.array(loaded_data[key])
+
+support_stencils = {int(k): np.array(v) for k, v in loaded_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in loaded_data["M_pinv"].items()}
 
 #%% Problem parameters
 # L = [A, B, C, 2D, E, 2F] is the coefitiens vector from GFDM that aproximates
@@ -121,7 +125,7 @@ def beta(p):
 alpha = lambda p: -np.sin(np.pi*p[0]) * np.exp(np.pi*p[1])
 
 # problem definition
-problem = gfdmi(coords, triangles, normal_vecs, L, source)
+problem = gfdmi(coords, triangles, normal_vecs, L, source, M_pinv=M_pinv, support_stencils=support_stencils)
 
 problem.material('material_left', permeability_left, omega_plus_nodes)
 problem.material('material_right', permeability_right, omega_minus_nodes)

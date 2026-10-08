@@ -22,10 +22,6 @@ plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["legend.framealpha"] = 0.1
 
-import calfem.geometry as cfg
-import calfem.mesh as cfm
-import calfem.vis_mpl as cfv
-
 from scipy.sparse.linalg import spsolve
 
 from GFDFlow import (
@@ -37,212 +33,17 @@ from GFDFlow import (
     plot_solution_2d,
     plot_solution_3d,
 )
-from GFDFlow.utils import compute_normal_vectors
 
-# %% [markdown]
-# # Geometry
-# 
-# First, we define the geometry of the domain using the `calfem-python` library.
+import json
+with open('examples/legacy/meshes/mesh5.json', 'r') as file:
+    mesh_data = json.load(file)
 
-# %%
-g = cfg.Geometry()
+for key in mesh_data.keys():
+    if key not in ["M_pinv", "support_stencils"]:
+        globals()[key] = np.array(mesh_data[key])
 
-# points
-#   corners
-g.point([0,0])
-g.point([2,0])
-g.point([2,1])
-g.point([0,1])
-
-#   interface
-g.point([1,0])
-g.point([1,1])
-
-#   left-circle
-g.point([0.5,0.5])
-g.point([0.7,0.5])
-g.point([0.5,0.7])
-g.point([0.3,0.5])
-g.point([0.5,0.3])
-
-#   right-circle
-g.point([1.5,0.5])
-g.point([1.7,0.5])
-g.point([1.5,0.7])
-g.point([1.3,0.5])
-g.point([1.5,0.3])
-
-# lines
-left_marker = 10
-right_marker = 11
-left_top_marker = 12
-right_top_marker = 13
-left_bottom_marker = 15
-right_bottom_marker = 16
-interface_marker = 17
-left_circ_mark = 18
-right_circ_mark = 19
-
-#   left-half
-g.spline([0,4], marker=left_bottom_marker)
-g.spline([4,5], marker=interface_marker)
-g.spline([5,3], marker=left_top_marker)
-g.spline([3,0], marker=left_marker)
-
-#   right-half
-g.spline([4,1], marker=right_bottom_marker)
-g.spline([1,2], marker=right_marker)
-g.spline([2,5], marker=right_top_marker)
-
-#   left-circle
-g.circle([7,6,8], marker=left_circ_mark)
-g.circle([8,6,9], marker=left_circ_mark)
-g.circle([9,6,10], marker=left_circ_mark)
-g.circle([10,6,7], marker=left_circ_mark)
-
-#   right-circle
-g.circle([12,11,13], marker=right_circ_mark)
-g.circle([13,11,14], marker=right_circ_mark)
-g.circle([14,11,15], marker=right_circ_mark)
-g.circle([15,11,12], marker=right_circ_mark)
-
-# surfaces
-left_half_mark = 0
-right_half_mark = 1
-left_circ_surf_mark = 2
-#   left-half
-g.surface(outer_loop=[0,1,2,3], holes=[[7,8,9,10]], marker=left_half_mark)
-#   left-circle
-g.surface([7,8,9,10], marker=left_circ_surf_mark)
-#   right-half
-g.surface([4,5,6,1], [[11,12,13,14]], marker=right_half_mark)
-
-# geometry plot
-plot_geometry(g, figsize=(8, 3))
-
-# %% [markdown]
-# # Mesh
-# 
-# From the geometry, `calfem` also generates the mesh.
-
-# %%
-mesh = cfm.GmshMesh(g,el_size_factor=0.05)
-
-coords, edof, dofs, bdofs, elementmarkers = mesh.create()
-verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
-    coords,
-    edof,
-    mesh.dofs_per_node,
-    mesh.el_type
-)
-
-plot_mesh(
-    coords=coords,
-    edof=edof,
-    dofs_per_node=mesh.dofs_per_node,
-    el_type=mesh.el_type,
-    filled=True,
-    figsize=(8, 3),
-)
-
-# %%
-coords.shape
-
-# %% [markdown]
-# # Identify the indices of the different boundaries and interfaces
-
-# %%
-# boundaries
-left_nodes = np.asarray(bdofs[left_marker]) - 1
-
-right_nodes = np.asarray(bdofs[right_marker]) - 1
-
-interface_nodes = np.asarray(bdofs[interface_marker]) - 1
-
-left_top_nodes = np.asarray(bdofs[left_top_marker]) - 1
-left_top_nodes = np.setdiff1d(left_top_nodes, [5,3])
-
-left_bottom_nodes = np.asarray(bdofs[left_bottom_marker]) - 1
-left_bottom_nodes = np.setdiff1d(left_bottom_nodes, [0,4])
-
-right_bottom_nodes = np.asarray(bdofs[right_bottom_marker]) - 1
-right_bottom_nodes = np.setdiff1d(right_bottom_nodes, [4,1])
-
-right_top_nodes = np.asarray(bdofs[right_top_marker]) - 1
-right_top_nodes = np.setdiff1d(right_top_nodes, [2,5])
-
-left_circ_nodes = np.asarray(bdofs[left_circ_mark]) - 1
-
-right_circ_nodes = np.asarray(bdofs[right_circ_mark]) - 1
-
-boundary_nodes = np.hstack((
-    left_nodes,
-    right_nodes,
-    interface_nodes,
-    left_top_nodes,
-    left_bottom_nodes,
-    right_top_nodes,
-    right_bottom_nodes,
-    left_circ_nodes,
-    right_circ_nodes
-))
-
-# interior nodes
-elementmarkers = np.asarray(elementmarkers)
-
-left_half_nodes = faces[elementmarkers == left_half_mark]
-left_half_nodes = left_half_nodes.flatten()
-left_half_nodes = np.setdiff1d(left_half_nodes, boundary_nodes)
-
-left_circ_mat_nodes = faces[elementmarkers == left_circ_surf_mark]
-left_circ_mat_nodes = left_circ_mat_nodes.flatten()
-left_circ_mat_nodes = np.setdiff1d(left_circ_mat_nodes, boundary_nodes)
-
-right_half_nodes = faces[elementmarkers == right_half_mark]
-right_half_nodes = right_half_nodes.flatten()
-right_half_nodes = np.setdiff1d(right_half_nodes, boundary_nodes)
-
-# plotting
-node_groups = {
-    "Left boundary": left_nodes,
-    "Right boundary": right_nodes,
-    "Interface": interface_nodes,
-    "Left-Top boundary": left_top_nodes,
-    "Left-Bottom boundary": left_bottom_nodes,
-    "Right-Top boundary": right_top_nodes,
-    "Right-Bottom boundary": right_bottom_nodes,
-    "Left circle interface": left_circ_nodes,
-    "Right circle interface": right_circ_nodes,
-    "Left material": left_half_nodes,
-    "Left circle material": left_circ_mat_nodes,
-    "Right material": right_half_nodes,
-}
-plot_nodes(coords, node_groups, point_size=20, figsize=(16, 6))
-
-# %%
-# computing normal vectors
-normal_vecs = np.zeros((coords.shape[0],2))
-nodes_to_compute = (
-    left_top_nodes,
-    left_bottom_nodes,
-    right_top_nodes,
-    right_bottom_nodes,
-    left_circ_nodes,
-    interface_nodes
-)
-for nodes in nodes_to_compute:
-    normal_vecs[nodes] = compute_normal_vectors(nodes, coords)
-
-# %%
-# plotting normal vectors
-plot_normal_vectors(
-    coords,
-    normal_vecs,
-    boundary_nodes=nodes_to_compute,
-    point_size=20,
-    quiver_alpha=0.5,
-    figsize=(8, 4),
-)
+support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 
 # %% [markdown]
@@ -273,7 +74,9 @@ problem = gfdmi(
     faces,
     normal_vecs,
     L,
-    source
+    source,
+    M_pinv=M_pinv,
+    support_stencils=support_stencils
 )
 
 # interior nodes

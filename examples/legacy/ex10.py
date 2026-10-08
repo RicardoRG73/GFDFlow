@@ -15,11 +15,7 @@ stationary and non-stationary solutions
 # =====
 import numpy as np
 import matplotlib.pyplot as plt
-import calfem.geometry as cfg
-import calfem.mesh as cfm
-import calfem.vis_mpl as cfv
-
-from GFDFlow.utils import compute_normal_vectors
+from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 from GFDFlow.visualization import (
     plot_geometry,
     plot_mesh,
@@ -29,122 +25,24 @@ from GFDFlow.visualization import (
     plot_solution_3d,
 )
 
-# =====
-# Geometry creation
-# =====
-g = cfg.Geometry()          # geometry object
+import json
+with open('examples/legacy/meshes/mesh10.json', 'r') as file:
+    mesh_data = json.load(file)
 
-# points
-interface_elsize = 0.5
-g.point([-1, -1])         # 0
-g.point([1, -1])         # 1
-g.point([1, 1])         # 2
-g.point([-1, 1])         # 3
+for key in mesh_data.keys():
+    if key not in ["M_pinv", "support_stencils"]:
+        globals()[key] = np.array(mesh_data[key])
 
-g.point([0, 0])         # 4 : center
-g.point([0, -0.5], el_size=interface_elsize)       # 5
-g.point([0.5, 0], el_size=interface_elsize)       # 6
-g.point([0, 0.5], el_size=interface_elsize)       # 7
-g.point([-0.5, 0], el_size=interface_elsize)      # 8
+b0 = b0_nodes
+b1 = b1_nodes
+b2 = b2_nodes
+b3 = b3_nodes
+bi = bi_nodes
+bm0 = bm0_nodes
+bm1 = bm1_nodes
 
-# lines
-    # boundary
-dird = 10
-dirr = 11
-diru = 12
-dirl = 13
-g.line([0,1], marker=dird)       # 0
-g.line([1,2], marker=dirr)       # 1
-g.line([2,3], marker=diru)       # 2
-g.line([3,0], marker=dirl)       # 3
-
-    # circle
-interf = 14
-g.circle([5,4,6], marker=interf)    # 4
-g.circle([6,4,7], marker=interf)    # 5
-g.circle([7,4,8], marker=interf)    # 6
-g.circle([8,4,5], marker=interf)    # 7
-
-# surfaces
-mat0 = 100      # marker for nodes on material 1
-mat1 = 101      # marker for nodes on material 2
-g.surface([0, 1, 2, 3], [[4, 5, 6, 7]], marker=mat0)    # 0
-g.surface([4, 5, 6, 7], marker=mat1)    # 1
-
-# geometry plot
-plot_geometry(g, title="Geometry", figsize=(7, 7), savepath="examples/legacy/figures/ex10/geometry.png")
-
-# =====
-# Mesh creation from geometry object
-# =====
-mesh = cfm.GmshMesh(g)
-
-mesh.el_type = 2                # type of element: 2 = triangle
-mesh.dofs_per_node = 1
-mesh.el_size_factor = 0.2
-
-coords, edof, dofs, bdofs, elementmarkers = mesh.create()       # create the geometry
-verts, faces, vertices_per_face, is_3d = cfv.ce2vf(coords, edof, mesh.dofs_per_node, mesh.el_type)  # coordinate-edges to vertices-faces
-
-# mesh plot
-plot_mesh(
-    coords=coords,
-    edof=edof,
-    dofs_per_node=mesh.dofs_per_node,
-    el_type=mesh.el_type,
-    filled=True,
-    figsize=(7, 7),
-    title="Mesh",
-    savepath="examples/legacy/figures/ex10/mesh.png",
-)
-
-# =====
-# Detection of boundary nodes index
-# =====
-b0 = np.asarray(bdofs[dird]) - 1            # index nodes in down boundary
-b1 = np.asarray(bdofs[dirr]) - 1            # index nodes in right boundary
-b1 = np.setdiff1d(b1,[1,2])
-b2 = np.asarray(bdofs[diru]) - 1            # index nodes in up boundary
-b3 = np.asarray(bdofs[dirl]) - 1            # index nodes in left boundary
-b3 = np.setdiff1d(b3,[3,0])
-bi = np.asarray(bdofs[interf]) - 1          # index of nodes on the interface
-
-
-# plots.plot_normal_vectors(coords, bi)
-
-B = np.hstack((b0,b1,b2,b3,bi))
-
-elementmarkers = np.asarray(elementmarkers)
-
-bm0 = faces[elementmarkers == mat0]
-bm0 = bm0.flatten()
-bm0 = np.setdiff1d(bm0,B)
-
-bm1 = faces[elementmarkers == mat1]
-bm1 = bm1.flatten()
-bm1 = np.setdiff1d(bm1,B)
-
-# plot of nodes
-plot_nodes(
-    coords,
-    {
-        "Down": b0, "Right": b1, "Up": b2, "Left": b3,
-        "Interface": bi, "Material 0": bm0, "Material 1": bm1,
-    },
-    figsize=(7, 7),
-    point_size=15,
-    alpha=0.7,
-    title="Nodes",
-    legend_bbox=(1.05, 1),
-    savepath="examples/legacy/figures/ex10/nodes.png",
-)
-
-# normal vectors
-normal_vecs = np.zeros((coords.shape[0],2))
-normal_vecs[bi] = compute_normal_vectors(bi, coords)
-
-# normal vectors plot
-plot_normal_vectors(coords, normal_vecs, bi, savepath="examples/legacy/figures/ex10/normal_vectors.png")
+support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 
 # =====
@@ -157,7 +55,7 @@ fd1 = lambda p: np.sin(np.pi*(p[1]+1)/4)                 # Dirichlet condition r
 fd2 = lambda p: np.sin(np.pi*(p[0]+1)/4)                 # dirichlet condition up
 fd3 = lambda p: 0                 # dirichlet condition left
 fi = lambda p: 0                            # interface condition
-delta = 0.01 * mesh.el_size_factor * interface_elsize
+delta = 0.01 * 0.2 * 0.5
 def fs(p):                                  # sourse
     out = 0
     return out
@@ -166,7 +64,7 @@ L = np.array([0,0,0,2,0,2])                 # coefitients vector
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 import scipy.sparse as sp
 
-problem = gfdmi(coords, faces, normal_vecs, L, fs)
+problem = gfdmi(coords, faces, normal_vecs, L, fs, M_pinv=M_pinv, support_stencils=support_stencils)
 problem.material("mat0", k0, bm0)
 problem.material("mat1", k1, bm1)
 

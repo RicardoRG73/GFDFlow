@@ -34,6 +34,8 @@ with open(mesh_file, 'r') as file:
     rock_nodes = np.array(mesh_data["rock_nodes"])
     dam_nodes = np.array(mesh_data["dam_nodes"])
     tailing_nodes = np.array(mesh_data["tailing_nodes"])
+    support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+    M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 #%%
 # -- domain properties --
@@ -54,7 +56,7 @@ beta = lambda p: 0
 
 #%%
 # -- assembling system KU = F --
-problem = gfdm(coords, triangles, normal_vecs, L, source)
+problem = gfdm(coords, triangles, normal_vecs, L, source, M_pinv=M_pinv, support_stencils=support_stencils)
 
 # material domains
 problem.material("dam", kdam, dam_nodes)

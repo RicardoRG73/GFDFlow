@@ -36,6 +36,9 @@ normal_vecs = np.array(mesh_data["normal_vecs"])
 coords = np.array(mesh_data["coords"])
 triangles = np.array(mesh_data["triangles"])
 
+support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
+
 
 #%%
 # =============================================================================
@@ -64,7 +67,9 @@ problem = gfdmi(
     triangles,
     normal_vecs,
     L,
-    source
+    source,
+    M_pinv=M_pinv,
+    support_stencils=support_stencils
 )
 
 # material domains

@@ -1,5 +1,5 @@
-show_plots = True
-save_mesh_to_file = False
+show_plots = False
+save_mesh_to_file = True
 
 #%%
 # =============================================================================
@@ -11,6 +11,8 @@ plt.style.use("seaborn-v0_8")
 plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["figure.autolayout"] = True
+
+from GFDFlow.utils import get_support_nodes_2D, compute_M_matrix, compute_M_matrix_neumann
 
 # calfem-python
 import calfem.geometry as cfg
@@ -165,6 +167,35 @@ labels=(
     "Omega_minus"
 )
 
+# =============================================================================
+# Normal vectors, support stencils and M_pinv
+# =============================================================================
+# normal vectors at interface left nodes
+def compute_normal_vecs(b):
+    normal_vecs = np.empty((b.shape[0], 2))
+    normal_vecs[:, 0] = 1.0
+    normal_vecs[:, 1] = -0.628 * np.cos(6.28 * coords[b, 1])
+    norms = np.linalg.norm(normal_vecs, axis=1, keepdims=True)
+    return normal_vecs / norms
+
+normal_vecs_left_interface = compute_normal_vecs(left_interface_nodes)
+normal_vecs_right_interface = compute_normal_vecs(right_interface_nodes)
+
+normal_vecs = np.zeros((coords.shape[0],2))
+normal_vecs[left_interface_nodes,:] = normal_vecs_left_interface
+normal_vecs[right_interface_nodes,:] = normal_vecs_right_interface
+
+M_pinv = {}
+support_stencils = {}
+
+for i in range(coords.shape[0]):
+    support_stencils[i] = get_support_nodes_2D(i, faces)
+    if np.linalg.norm(normal_vecs[i]) > 1e-10:
+        M = compute_M_matrix_neumann(i, support_stencils[i], coords, normal_vecs[i])
+    else:
+        M = compute_M_matrix(i, support_stencils[i], coords)
+    M_pinv[i] = np.linalg.pinv(M)
+
 if save_mesh_to_file:
     import json
     data_to_save = {}
@@ -172,6 +203,9 @@ if save_mesh_to_file:
         data_to_save[label.replace(" ","_").replace("-","_").lower()+"_nodes"] = b.tolist()
     data_to_save["coords"] = coords.tolist()
     data_to_save["triangles"] = faces.tolist()
+    data_to_save["normal_vecs"] = normal_vecs.tolist()
+    data_to_save["M_pinv"] = {str(k): v.tolist() for k, v in M_pinv.items()}
+    data_to_save["support_stencils"] = {str(k): v.tolist() for k, v in support_stencils.items()}
     with open('examples/legacy/meshes/mesh2.json', 'w') as file:
         json.dump(data_to_save, file, indent=4)
     print("\n ============\n Mesh saved \n ============")

@@ -26,6 +26,8 @@ with open(mesh_file, 'r') as file:
     top_nodes = np.array(mesh_data["top_nodes"])
     corner_nodes = np.array(mesh_data["corner_nodes"]) 
     normal_vecs = np.array(mesh_data["normal_vecs"])
+    support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+    M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 #%%
 # -- problem parameters --
@@ -47,7 +49,7 @@ Psir = lambda p: 0
 
 L2 = np.array([0,0,0,1,0,1])
 
-problem = gfdmi(coords, faces, normal_vecs, L2, source)
+problem = gfdmi(coords, faces, normal_vecs, L2, source, M_pinv=M_pinv, support_stencils=support_stencils)
 
 problem.material("0", k, interior_nodes)
 

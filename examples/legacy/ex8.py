@@ -11,129 +11,21 @@ plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["legend.framealpha"] = 0.1
 
-import calfem.geometry as cfg
-import calfem.mesh as cfm
-import calfem.vis_mpl as cfv
-
-from GFDFlow.utils import compute_normal_vectors
+import json
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
-from GFDFlow.visualization import (
-    plot_geometry,
-    plot_mesh,
-    plot_nodes,
-    plot_normal_vectors,
-    plot_solution_2d,
-)
+from GFDFlow.visualization import plot_solution_2d
 
-g = cfg.Geometry()
+with open('examples/legacy/meshes/mesh8.json', 'r') as file:
+    mesh_data = json.load(file)
 
-# points
-g.point([0,0])                  # 0
-g.point([90,0])                 # 1
-g.point([90,30])                # 2
-g.point([60,30], el_size=0.4)                # 3
-g.point([60,16], el_size=0.1)   # 4
-g.point([59,16], el_size=0.1)   # 5
-g.point([59,27], el_size=0.6)   # 6
-g.point([31,27], el_size=0.6)   # 7
-g.point([31,12], el_size=0.1)   # 8
-g.point([30,12], el_size=0.1)   # 9
-g.point([30,30], el_size=0.4)                # 10
-g.point([0,30])                 # 11
+for key in mesh_data.keys():
+    if key not in ["M_pinv", "support_stencils"]:
+        globals()[key] = np.array(mesh_data[key])
 
-# lines
-left = 10
-right = 11
-neumann = 12
-g.spline([0,1], marker=neumann)
-g.spline([1,2], marker=neumann)
-g.spline([2,3], marker=right)
-g.spline([3,4], marker=neumann)
-g.spline([4,5], marker=neumann)
-g.spline([5,6], marker=neumann)
-g.spline([6,7], marker=neumann)
-g.spline([7,8], marker=neumann)
-g.spline([8,9], marker=neumann)
-g.spline([9,10], marker=neumann)
-g.spline([10,11], marker=left)
-g.spline([11,0], marker=neumann)
-
-# surfaces
-g.surface([0,1,2,3,4,5,6,7,8,9,10,11])
-
-# geometry plot
-plot_geometry(g, title="Geometry", figsize=(8, 3), savepath="examples/legacy/figures/ex8/geometry.png")
-
-
-# mesh generation
-mesh = cfm.GmshMesh(g,el_size_factor=2)
-
-coords, edof, dofs, bdofs, elementmarkers = mesh.create()
-verts, faces, vertices_per_face, is_3d = cfv.ce2vf(
-    coords,
-    edof,
-    mesh.dofs_per_node,
-    mesh.el_type
-)
-
-plot_mesh(
-    coords=coords,
-    edof=edof,
-    dofs_per_node=mesh.dofs_per_node,
-    el_type=mesh.el_type,
-    filled=True,
-    figsize=(8, 3),
-    title="Mesh",
-    suptitle=f"el_size_factor={mesh.el_size_factor}, N={coords.shape[0]} nodes",
-    savepath="examples/legacy/figures/ex8/mesh.png",
-)
-
-
-#%% nodes identification
-left_nodes = np.asarray(bdofs[left]) - 1
-right_nodes = np.asarray(bdofs[right]) - 1
-neumann_nodes = np.asarray(bdofs[neumann]) - 1
-
-# elination of repited nodes
-neumann_nodes = np.setdiff1d(neumann_nodes, right_nodes)
-neumann_nodes = np.setdiff1d(neumann_nodes, left_nodes)
+support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 N = coords.shape[0]
-boundary_nodes = np.hstack((left_nodes, right_nodes, neumann_nodes))
-interior_nodes = np.setdiff1d(np.arange(N), boundary_nodes)
-
-# plot nodes
-plot_nodes(
-    coords,
-    {
-        "interior": interior_nodes,
-        "left": left_nodes,
-        "right": right_nodes,
-        "neumann": neumann_nodes,
-    },
-    figsize=(7, 4),
-    alpha=0.5,
-    savepath="examples/legacy/figures/ex8/nodes.png",
-)
-
-#%% Normal vectors computation
-# compute_normal_vectors returns a compact (len(neumann_nodes), 2) array.
-# We need a full-size (N, 2) array so GFDM.py can index it with global node indices.
-normal_vecs_compact = compute_normal_vectors(neumann_nodes, coords)
-normal_vecs = np.zeros((N, 2))
-normal_vecs[neumann_nodes] = normal_vecs_compact
-
-# normal vectors plot
-plot_normal_vectors(
-    coords,
-    normal_vecs,
-    neumann_nodes,
-    quiver_color="red",
-    quiver_alpha=0.3,
-    savepath="examples/legacy/figures/ex8/normal_vectors.png",
-)
-
-
 
 #%% Problem Discretization
 # Paramters laplacian
@@ -142,7 +34,7 @@ source = lambda p: 0
 k = lambda p: 0.5
 neumann_condition = lambda p: 0
 
-problem = gfdmi(coords, faces, normal_vecs, L, source)
+problem = gfdmi(coords, faces, normal_vecs, L, source, M_pinv=M_pinv, support_stencils=support_stencils)
 
 problem.material("interior", k, interior_nodes)
 problem.dirichlet_boundary("left", left_nodes, lambda p: 50)

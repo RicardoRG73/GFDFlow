@@ -32,6 +32,8 @@ with open(mesh_file, 'r') as file:
     top_left_nodes = np.array(mesh_data["top_left_nodes"])
     bottom_nodes = np.array(mesh_data["bottom_nodes"])
     normal_vecs = np.array(mesh_data["normal_vecs"])
+    support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
+    M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
 #%%
 # -- discretization --
@@ -43,7 +45,7 @@ L = np.array([0,0,0,1,0,1])
 source = lambda p: 0
 k = lambda p: 1
 
-problem = gfdm(coords, triangles, normal_vecs, L, source)
+problem = gfdm(coords, triangles, normal_vecs, L, source, M_pinv=M_pinv, support_stencils=support_stencils)
 
 problem.material("interior", k, interior_nodes)
 
