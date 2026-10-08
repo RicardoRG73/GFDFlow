@@ -15,8 +15,19 @@ import json
 with open('examples/legacy/meshes/mesh1.json', 'r') as file:
     loaded_data = json.load(file)
 
-for key in loaded_data.keys():
-    globals()[key] = np.array(loaded_data[key])
+coords = np.array(loaded_data["coords"])
+triangles = np.array(loaded_data["triangles"])
+normal_vecs = np.array(loaded_data["normal_vecs"])
+left_nodes = np.array(loaded_data["left_nodes"])
+right_nodes = np.array(loaded_data["right_nodes"])
+bottom_left_nodes = np.array(loaded_data["bottom_left_nodes"])
+top_left_nodes = np.array(loaded_data["top_left_nodes"])
+bottom_right_nodes = np.array(loaded_data["bottom_right_nodes"])
+top_right_nodes = np.array(loaded_data["top_right_nodes"])
+left_interface_nodes = np.array(loaded_data["left_interface_nodes"])
+right_interface_nodes = np.array(loaded_data["right_interface_nodes"])
+interior_material_0_nodes = np.array(loaded_data["interior_material_0_nodes"])
+interior_material_1_nodes = np.array(loaded_data["interior_material_1_nodes"])
 
 #%% Problem parameters
 # L = [A, B, C, 2D, E, 2F] is the coefitiens vector from GFDM that aproximates

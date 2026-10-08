@@ -26,9 +26,16 @@ import json
 with open('examples/legacy/meshes/mesh9.json', 'r') as file:
     mesh_data = json.load(file)
 
-for key in mesh_data.keys():
-    if key not in ["M_pinv", "support_stencils"]:
-        globals()[key] = np.array(mesh_data[key])
+coords = np.array(mesh_data["coords"])
+faces = np.array(mesh_data["faces"])
+normal_vecs = np.array(mesh_data["normal_vecs"])
+mat0_nodes = np.array(mesh_data["mat0_nodes"])
+mat1_nodes = np.array(mesh_data["mat1_nodes"])
+mat2_nodes = np.array(mesh_data["mat2_nodes"])
+interf0_nodes = np.array(mesh_data["interf0_nodes"])
+interf1_nodes = np.array(mesh_data["interf1_nodes"])
+interf2_nodes = np.array(mesh_data["interf2_nodes"])
+dirichlet_nodes = np.array(mesh_data["dirichlet_nodes"])
 
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}

@@ -18,9 +18,13 @@ from GFDFlow.visualization import plot_solution_2d
 with open('examples/legacy/meshes/mesh8.json', 'r') as file:
     mesh_data = json.load(file)
 
-for key in mesh_data.keys():
-    if key not in ["M_pinv", "support_stencils"]:
-        globals()[key] = np.array(mesh_data[key])
+coords = np.array(mesh_data["coords"])
+faces = np.array(mesh_data["faces"])
+normal_vecs = np.array(mesh_data["normal_vecs"])
+interior_nodes = np.array(mesh_data["interior_nodes"])
+left_nodes = np.array(mesh_data["left_nodes"])
+right_nodes = np.array(mesh_data["right_nodes"])
+neumann_nodes = np.array(mesh_data["neumann_nodes"])
 
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
@@ -43,7 +47,6 @@ problem.neumann_boundary("neumann", k, neumann_nodes, neumann_condition)
 
 K, F = problem.continuous_discretization()
 
-import scipy.sparse as sp
 U = sp.linalg.spsolve(K, F)
 
 # Plot solution

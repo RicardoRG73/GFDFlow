@@ -60,9 +60,13 @@ import json
 with open('examples/legacy/meshes/mesh2.json', 'r') as file:
     loaded_data = json.load(file)
 
-for key in loaded_data.keys():
-    if key not in ["M_pinv", "support_stencils"]:
-        globals()[key] = np.array(loaded_data[key])
+coords = np.array(loaded_data["coords"])
+triangles = np.array(loaded_data["triangles"])
+omega_minus_nodes = np.array(loaded_data["omega_minus_nodes"])
+omega_plus_nodes = np.array(loaded_data["omega_plus_nodes"])
+dirichlet_nodes = np.array(loaded_data["dirichlet_nodes"])
+interface_left_nodes = np.array(loaded_data["interface_left_nodes"])
+interface_right_nodes = np.array(loaded_data["interface_right_nodes"])
 
 support_stencils = {int(k): np.array(v) for k, v in loaded_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in loaded_data["M_pinv"].items()}

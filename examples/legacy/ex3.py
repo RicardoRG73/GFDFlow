@@ -23,9 +23,17 @@ import json
 with open("examples/legacy/meshes/mesh3.json","r") as f:
     mesh_data = json.load(f)
 
-for key in mesh_data.keys():
-    if key not in ["M_pinv", "support_stencils"]:
-        globals()[key] = np.array(mesh_data[key])
+coords = np.array(mesh_data["coords"])
+triangles = np.array(mesh_data["triangles"])
+normal_vecs = np.array(mesh_data["normal_vecs"])
+left_nodes = np.array(mesh_data["left_nodes"])
+right_nodes = np.array(mesh_data["right_nodes"])
+bottom_nodes = np.array(mesh_data["bottom_nodes"])
+top_nodes = np.array(mesh_data["top_nodes"])
+rock_nodes = np.array(mesh_data["rock_nodes"])
+clay_nodes = np.array(mesh_data["clay_nodes"])
+left_interface_nodes = np.array(mesh_data["left_interface_nodes"])
+right_interface_nodes = np.array(mesh_data["right_interface_nodes"])
 
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
