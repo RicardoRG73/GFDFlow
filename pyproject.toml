@@ -24,6 +24,11 @@ dependencies = [
     "calfem-python",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/ricardorg73/GFDFlow"
 "Bug Tracker" = "https://github.com/ricardorg73/GFDFlow/issues"

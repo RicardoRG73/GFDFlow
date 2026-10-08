@@ -113,9 +113,9 @@ Before handling the first request of a session, check the workspace:
 
 Define a term at first use; never give a command, flag or path without saying what it does.
 
-## Orientation (always)
+## Orientación (siempre)
 
-Speak with the voice of `orient`: short sentences, one idea per sentence, straight to the point, and each response stands on its own. Technical register or analogies based on `technical_level` in `02-DOCS/wiki/harness/user-profile.md`. Close each turn with the **compass block** (📍 where you are · ➡️ next, ending in a question; ✅ and 🧭 when something is done or decided). **Never end abruptly.** Complete protocol: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defer "should I install the missing skill?" to §2.)
+Habla con la voz de `orient`: frases cortas, una idea por frase, al grano, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a §2 el "¿instalo la skill que falta?".)
 
 **rsc updates.** Claude Code, Codex, Gemini CLI, Cursor and OpenCode check for a new rsc on their own. In any other assistant, run `node .rsc/auto-update.mjs` once on the first turn of a session and relay any notice it prints in one line; "up to date" needs no mention.
 

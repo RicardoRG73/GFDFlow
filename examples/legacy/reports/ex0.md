@@ -1,118 +1,133 @@
-# 2D Poisson Equation Solution
+# Example 00: 2D Poisson Equation on an Irregular Curved Domain
+
+> **Reference Documentation:** For the mathematical foundations of the Generalized Finite Difference Method (GFDM), local Taylor series expansions, support star selection, and ghost-node boundary formulations, refer to the [GFDM Theoretical Foundations](../../../02-DOCS/wiki/theory.md).
+
+---
 
 ## 1. Executive Summary
 
-This report documents the numerical solution of a two-dimensional Poisson equation defined over an arbitrary bounded domain with a curved boundary. The spatial discretization is performed using the **Generalized Finite Difference Method (GFDM)** as implemented in the **GFDFlow** framework. The domain features mixed boundary conditions, including non-homogeneous Dirichlet conditions along three boundary segments and a homogeneous Neumann flux condition on a curved circular arc. The numerical assembly incorporates the ghost-node technique to enforce derivative boundary conditions accurately on unstructured nodal sets.
+- **Objective:** Compute the numerical solution of a two-dimensional Poisson equation on an irregular domain with mixed Dirichlet and Neumann conditions.
+- **Domain Type:** 2D bounded domain with planar boundaries and a curved circular arc on the right boundary.
+- **Governing Physics:** Steady-state Poisson equation with uniform negative source generation ($f = -2$).
+- **Key Validation Points:** Accurate enforcement of non-homogeneous linear Dirichlet boundaries and homogeneous Neumann flux on a circular arc using the ghost-node technique on unstructured nodes.
+- **Associated Code:** [`../ex0.py`](../ex0.py)
+- **Mesh / Input Data:** [`../meshes/mesh0.json`](../meshes/mesh0.json)
 
 ---
 
-## 2. Mathematical Formulation
+## 2. Problem Formulation & Boundary Conditions
 
-### 2.1 Governing Differential Equation
-GFDFlow solves linear second-order Partial Differential Equations (PDEs) in the general operator form:
+### 2.1 Governing Differential Operator
+In accordance with the general GFDFlow differential operator $L u = f$ (see [Theory §2](../../../02-DOCS/wiki/theory.md#2-the-general-second-order-linear-differential-operator)):
 
-$$\mathb{L}u = A u + B u_x + C u_y + D u_{xx} + E u_{xy} + F u_{yy} = f(x, y)$$
+$$L u = A u + B u_x + C u_y + D u_{xx} + E u_{xy} + F u_{yy} = f(x, y)$$
 
-where $\mathbf{L} = [A, B, C, D, E, F]^T$ is the coefficient vector. For this benchmark problem, the parameters are defined as:
+The parameters for this benchmark problem are configured as:
 
-$$\mathbf{L} = [0, 0, 0, 1, 0, 1]^T$$
-
-This reduces the general differential operator to the 2D Poisson equation:
-
-$$\nabla^2 u = u_{xx} + u_{yy} = f(x, y)$$
-
-with a uniform constant source term $f(x, y) = -2$ across the domain, and an isotropic material permeability $k(p) = 1.0$.
+- **Coefficient Vector $\mathbf{L}$:** $[A, B, C, 2D, E, 2F]^T = [0, 0, 0, 1, 0, 1]^T$
+- **Resulting PDE:** 2D Poisson equation
+  $$\nabla^2 u = u_{xx} + u_{yy} = -2$$
+- **Source Term:** Uniform constant source $f(x, y) = -2$
+- **Permeability:** Isotropic permeability $k(p) = 1.0$
 
 ### 2.2 Boundary Conditions
-The domain boundary $\partial \Omega$ is decomposed into four distinct segments:
+The domain boundary $\partial \Omega$ is decomposed into four segments (see [Theory §6](../../../02-DOCS/wiki/theory.md#6-implementation-of-boundary-conditions)):
 
-1. **Left Boundary ($x = 0$)**: Dirichlet boundary condition  
-   $$u(0, y) = 0$$
-2. **Bottom Boundary ($y = 0$)**: Linear Dirichlet boundary condition  
-   $$u(x, 0) = 0.5 x$$
-3. **Top Boundary ($y = 1$)**: Linear Dirichlet boundary condition  
-   $$u(x, 1) = x$$
-4. **Right Boundary (Curved Arc)**: Homogeneous Neumann boundary condition  
-   $$\frac{\partial u}{\partial n} = \mathbf{n} \cdot \nabla u = 0$$
-   where $\mathbf{n} = (n_x, n_y)$ is the outward unit normal vector.
+| Boundary ID / Segment | Type | Mathematical Condition | GFDFlow Function | Physical Meaning |
+|---|---|---|---|---|
+| `left` ($x = 0$) | Dirichlet | $u(0, y) = 0$ | `problem.dirichlet_boundary` | Zero potential baseline |
+| `bottom` ($y = 0$) | Dirichlet | $u(x, 0) = 0.5 x$ | `problem.dirichlet_boundary` | Linear potential gradient |
+| `top` ($y = 1$) | Dirichlet | $u(x, 1) = x$ | `problem.dirichlet_boundary` | Linear potential gradient |
+| `right` (circular arc) | Neumann | $\frac{\partial u}{\partial n} = \mathbf{n} \cdot \nabla u = 0$ | `problem.neumann_boundary` | Impermeable boundary (zero flux) |
 
 ---
 
-## 3. Geometry and Mesh Discretization
+## 3. Geometry and Spatial Discretization
 
 ### 3.1 Domain Definition
-The physical domain $\Omega$ is defined by five key control points:
+The physical domain $\Omega$ is defined by five control points:
 - $P_0 = (0, 0)$
 - $P_1 = (1, 0)$
 - $P_2 = (2, 0)$
 - $P_3 = (1, 1)$
 - $P_4 = (0, 1)$
 
-The right boundary is described by a circular arc centered at $(1,0)$ with radius $R = 1$, connecting point $P_2 = (2,0)$ to point $P_3 = (1,1)$. The remaining boundaries are straight spline segments.
+The right boundary is formed by a circular arc centered at $(1, 0)$ with radius $R = 1$ connecting $P_2 = (2, 0)$ to $P_3 = (1, 1)$. The remaining boundaries are straight segments.
 
 ![Domain Geometry](../figures/ex0/geometry.png)
 
-### 3.2 Nodal Cloud and Triangular Mesh
-Using `calfem` and `Gmsh`, an unstructured triangular mesh is generated over the geometry with an element size factor of $\delta = 0.08$. The node cloud consists of interior nodes and boundary nodes segregated according to boundary condition type.
+### 3.2 Nodal Point Cloud & Mesh
+The unstructured triangular mesh was generated using `calfem-python` and `Gmsh` with an element size factor $\delta = 0.08$. Support stars for each node were selected with a minimum of $q \ge 5$ support nodes to guarantee full rank in the least-squares system (see [Theory §5](../../../02-DOCS/wiki/theory.md#5-domain-discretization-and-support-node-selection-stars)).
 
 ![Unstructured Triangular Mesh](../figures/ex0/mesh.png)
 
-### 3.3 Boundary Classification and Normal Vectors
-The boundary nodes are categorized into discrete sets:
-- **Left Nodes**: Dirichlet ($u = 0$)
-- **Bottom Nodes**: Dirichlet ($u = 0.5x$)
-- **Top Nodes**: Dirichlet ($u = x$)
-- **Right Nodes**: Neumann ($\partial u / \partial n = 0$)
-- **Interior Nodes**: Governing Poisson equation ($\nabla^2 u = -2$)
+### 3.3 Boundary Classification & Normal Vectors
+Nodal sets are partitioned into:
+- **Left Nodes:** Dirichlet condition ($u = 0$)
+- **Bottom Nodes:** Dirichlet condition ($u = 0.5x$)
+- **Top Nodes:** Dirichlet condition ($u = x$)
+- **Right Nodes:** Neumann condition ($\partial u / \partial n = 0$)
+- **Interior Nodes:** Governing Poisson equation ($\nabla^2 u = -2$)
 
 ![Boundary Node Classification](../figures/ex0/boundaries.png)
 
-For the curved Neumann boundary (Right Nodes), unit outward normal vectors $\mathbf{n}$ are computed automatically using geometric normals to enforce directional flux constraints.
+For the curved Neumann right boundary, outward unit normal vectors $\mathbf{n} = (n_x, n_y)$ were computed geometrically to enforce directional flux constraints via the ghost-node formulation (see [Theory §6.2](../../../02-DOCS/wiki/theory.md#62-neumann-boundary-conditions-and-ghost-node-formulation)).
 
 ![Normal Vectors on Neumann Boundary](../figures/ex0/normal_vectors.png)
 
 ---
 
-## 4. GFDM Numerical Scheme and Assembly
+## 4. GFDFlow Pipeline & Implementation
 
-### 4.1 Local Taylor Expansion & Moment Matrix
-At each central node $i = (x_i, y_i)$, a local star stencil $S_i$ is formed by its spatial neighbors. The function $u(x, y)$ around node $i$ is expanded via a second-order Taylor series:
+The numerical solution is assembled and solved using the pipeline in [`../ex0.py`](../ex0.py):
 
-$$u_j \approx u_i + h_j \left.\frac{\partial u}{\partial x}\right|_i + k_j \left.\frac{\partial u}{\partial y}\right|_i + \frac{h_j^2}{2} \left.\frac{\partial u}{\partial x^2}\right|_i + \frac{k_j^2}{2} \left.\frac{\partial u}{\partial y^2}\right|_i + h_j k_j \left.\frac{\partial u}{\partial x \partial y}\right|_i$$
+```python
+from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+import scipy.sparse as sp
 
-where $h_j = x_j - x_i$ and $k_j = y_j - y_i$ for each $j \in S_i$. The weighted least-squares approximation yields the moment matrix $M_i$:
+# 1. Initialize GFDM problem with geometry and precomputed stencils
+problem = gfdmi(coords, triangles, normal_vectors, L, source, support_stencils, M_pinv)
 
-$$\mathbf{M}_i \boldsymbol{\mathbf{D}} u_i \approx \boldsymbol{\Delta} u_i$$
+# 2. Assign material and boundary conditions
+problem.material('0', permeability, interior_nodes)
+problem.neumann_boundary('right', permeability, right_nodes, right_condition)
+problem.dirichlet_boundary('left', left_nodes, left_condition)
+problem.dirichlet_boundary('top', top_nodes, top_condition)
+problem.dirichlet_boundary('bottom', bottom_nodes, bottom_condition)
 
-where $\boldsymbol{\mathbf{D}} u_i = [u_i, u_{x,i}, u_{y,i}, u_{xx,i}, u_{yy,i}, u_{xy,i}]^T$. The pseudo-inverse $\mathbf{M}_i^\dagger$ is pre-calculated to build sparse linear system coefficients efficiently.
+# 3. Assemble sparse system KU = F (see Theory §8)
+K, F = problem.continuous_discretization()
 
-### 4.2 Ghost-Node Formulation for Neumann Boundaries
-To enforce the Neumann flux condition $\mathbf{n}_i \cdot \nabla u = n_x u_{x,i} + n_y u_{y,i} = 0$ on the right boundary without requiring structured exterior grids, an augmented ghost-node formulation is employed. An extended moment matrix $\mathbf{M}_{\text{augmented}}$ incorporates ghost displacement components projected along normal vector $\mathbf{n}_i$, eliminating the ghost potential analytically during system assembly.
+# 4. Solve sparse linear system
+U = sp.linalg.spsolve(K, F)
+```
 
 ---
 
 ## 5. Numerical Results and Discussion
 
-The assembled sparse linear system $\mathbf{K} \mathbf{U} = \mathbf{F}$ is solved using `scipy.sparse.linalg.spsolve`.
-
-### 5.1 Potential Field Contour Distribution
-The calculated scalar potential field $U(x, y)$ smoothly transitions between the specified Dirichlet boundaries while satisfying the internal curvature demands of the source term $f(x, y) = -2$.
+### 5.1 Potential Field Distribution (2D Contour)
+The solution field $U(x, y)$ transitions smoothly across the domain, reflecting the interaction between the Dirichlet boundaries and the uniform internal source term $f(x, y) = -2$.
 
 ![Solution Contour Map](../figures/ex0/contourf.png)
 
-Key observations from the contour map:
-- **Left boundary ($x=0$)**: $U = 0$ is strictly satisfied.
-- **Bottom boundary ($y=0$)**: Linearly increases from $0$ at $x=0$ to $1.0$ at $x=2$.
-- **Top boundary ($y=1$)**: Linearly increases from $0$ at $x=0$ to $1.0$ at $x=1$.
-- **Right boundary**: Contour lines meet the curved boundary orthogonally, confirming that $\frac{\partial u}{\partial n} = 0$ is accurately enforced.
+**Key Observations:**
+- **Dirichlet Adherence:**
+  - On the left boundary ($x = 0$), $U = 0$ is strictly satisfied.
+  - On the bottom boundary ($y = 0$), the potential increases linearly from $0$ at $x = 0$ to $1.0$ at $x = 2$.
+  - On the top boundary ($y = 1$), the potential increases linearly from $0$ at $x = 0$ to $1.0$ at $x = 1$.
+- **Neumann Flux Condition:** Equipotential contour lines meet the curved circular arc orthogonally, verifying that $\partial u / \partial n = 0$ is accurately captured without spurious distortion.
+- **Internal Curvature:** The negative source term creates internal downward curvature consistent with Poisson physics.
 
-### 5.2 3D Surface Plot
-The 3D surface plot depicts the continuous potential landscape across the irregular domain.
+### 5.2 3D Surface Visualization
+The 3D surface plot depicts the continuous potential landscape across the irregular domain:
 
 ![3D Surface Plot](../figures/ex0/3dplot.png)
 
 ---
 
-## 6. Summary
+## 6. Verification and Conclusions
 
-This benchmark demonstrates the capability of **GFDFlow** to model Poisson transport problems on non-rectangular geometries with mixed Dirichlet and Neumann boundary conditions using the Generalized Finite Difference Method. The integration of Gmsh unstructured meshes with GFDM Taylor-expansion stencils and ghost-node derivative constraints provides accurate, stable, and continuous potential field solutions.
+- **Boundary Enforcement:** Both linear Dirichlet profiles and the directional Neumann condition on the curved boundary are enforced with high numerical fidelity.
+- **Ghost-Node Performance:** The ghost-node formulation eliminates the need for body-fitted structured exterior grids, providing stable derivative boundary enforcement on unstructured point clouds.
+- **Conclusion:** Example 00 validates the core GFDM discretization workflow in **GFDFlow** for irregular 2D domains with curved geometries and mixed boundary conditions.

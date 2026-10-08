@@ -5,21 +5,23 @@ from GFDFlow.GFDM import GFDMI_2D_problem
 def test_gfdmi_initialization():
     coords = np.array([[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]])
     triangles = np.array([[0, 1, 4], [1, 3, 4], [3, 2, 4], [2, 0, 4]])
+    normal_vectors = np.zeros_like(coords)
     L = np.array([0, 0, 0, 1, 0, 1])
     source = lambda p: 0
     
-    problem = GFDMI_2D_problem(coords, triangles, L, source)
+    problem = GFDMI_2D_problem(coords, triangles, normal_vectors, L, source)
     assert problem.coords.shape == (5, 2)
     assert problem.triangles.shape == (4, 3)
 
 def test_support_nodes():
     coords = np.array([[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]])
     triangles = np.array([[0, 1, 4], [1, 3, 4], [3, 2, 4], [2, 0, 4]])
+    normal_vectors = np.zeros_like(coords)
     L = np.array([0, 0, 0, 1, 0, 1])
     source = lambda p: 0
     
-    problem = GFDMI_2D_problem(coords, triangles, L, source)
-    s_nodes = problem.support_nodes(4)
+    problem = GFDMI_2D_problem(coords, triangles, normal_vectors, L, source)
+    s_nodes = problem.support_stencils[4]
     assert len(s_nodes) >= 5
     assert 4 in s_nodes
 
@@ -33,11 +35,12 @@ def test_simple_laplacian():
     from scipy.spatial import Delaunay
     tri = Delaunay(coords)
     triangles = tri.simplices
+    normal_vectors = np.zeros_like(coords)
     
     L = np.array([0, 0, 0, 1, 0, 1]) # Laplacian
     source = lambda p: 0
     
-    problem = GFDMI_2D_problem(coords, triangles, L, source)
+    problem = GFDMI_2D_problem(coords, triangles, normal_vectors, L, source)
     
     # Material
     interior_nodes = np.arange(len(coords))
