@@ -1,41 +1,47 @@
-# %% [markdown]
-# Example 06
-# 
-# Solution of the Poisson equation in 2D
-# 
-# $$
-# k_i \nabla^2 u = f
-# $$
-# 
-# with $k_i$ discontinuous due to materials with different properties, but with $u$ continuous.
+"""Example 05: 2D Porous Media Flow with Curved Circular Inclusions.
 
-# %% [markdown]
-# # Libraries
+This example solves a 2D Poisson equation in a composite medium composed of
+sand and rock zones, including an embedded low-permeability circular inclusion
+and an internal circular Dirichlet boundary.
 
-# %%
-import numpy as np
+Governing Equation
+------------------
+.. math::
+    k_i \\nabla^2 u = 0
+
+Material Properties
+-------------------
+* Sand (left subdomain): :math:`k_{\\text{sand}} = 1.0`
+* Rock (right subdomain): :math:`k_{\\text{rock}} = 0.3`
+* Circular inclusion: :math:`k_{\\text{circ}} = 0.1`
+
+Boundary Conditions
+-------------------
+* Left: Dirichlet, :math:`u = 1.0`
+* Right: Dirichlet, :math:`u = 0.0`
+* Internal Right Circle: Dirichlet, :math:`u(x) = 0.75 - x/3`
+* Top / Bottom: Neumann, :math:`\\partial u / \\partial n = 0`
+"""
+
+import json
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 
+from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_solution_2d, plot_solution_3d
+
+# Configure visualization style
 plt.style.use(["seaborn-v0_8-darkgrid", "seaborn-v0_8-colorblind", "seaborn-v0_8-talk"])
 plt.rcParams["legend.frameon"] = True
 plt.rcParams["legend.shadow"] = True
 plt.rcParams["legend.framealpha"] = 0.1
 
-from scipy.sparse.linalg import spsolve
-
-from GFDFlow import (
-    GFDMI_2D_problem as gfdmi,
-    plot_geometry,
-    plot_mesh,
-    plot_nodes,
-    plot_normal_vectors,
-    plot_solution_2d,
-    plot_solution_3d,
-)
-
-import json
-with open('examples/legacy/meshes/mesh5.json', 'r') as file:
+# =============================================================================
+# 1. Load Mesh Data from File
+# =============================================================================
+with open("examples/legacy/meshes/mesh5.json", "r") as file:
     mesh_data = json.load(file)
 
 coords = np.array(mesh_data["coords"])
@@ -57,30 +63,23 @@ interface_nodes = np.array(mesh_data["interface_nodes"])
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
-
-# %% [markdown]
-# # Problem parameters
-
-# %%
-# coeffitients L = [A, B, C, D, E, F] in differential operator
-# Au + Bu_x + Cu_y + Du_{xx} + Eu_{xy} + Fu_{yy}
-L = np.array([0,0,0,1,0,1])
-# permeability / conductivity
-k_sand = lambda p: 1
+# =============================================================================
+# 2. Problem Parameters and Boundary Definitions
+# =============================================================================
+L = np.array([0, 0, 0, 1, 0, 1])
+k_sand = lambda p: 1.0
 k_rock = lambda p: 0.3
 k_rock_circ = lambda p: 0.1
-# source
-source = lambda p: 0
-# boundaries conditions
-neumann_cond = lambda p: 0
-left_dirichlet = lambda p: 1
-right_dirichlet = lambda p: 0
+source = lambda p: 0.0
 
-# interface flux. u_n|_{M0} - u_n|_{M1} = beta
-beta = lambda p: 0
+neumann_cond = lambda p: 0.0
+left_dirichlet = lambda p: 1.0
+right_dirichlet = lambda p: 0.0
+beta = lambda p: 0.0
 
-# Problem Assembling
-
+# =============================================================================
+# 3. GFDM Problem Initialization and Material Setup
+# =============================================================================
 problem = gfdmi(
     coords,
     faces,
@@ -88,26 +87,26 @@ problem = gfdmi(
     L,
     source,
     M_pinv=M_pinv,
-    support_stencils=support_stencils
+    support_stencils=support_stencils,
 )
 
-# interior nodes
+# Material assignments
 problem.material("sand", k_sand, left_half_nodes)
 problem.material("rock", k_rock, right_half_nodes)
 problem.material("rock_circ", k_rock_circ, left_circ_mat_nodes)
 
-# neumann boundaries
+# Neumann boundaries
 problem.neumann_boundary("left_top", k_sand, left_top_nodes, neumann_cond)
 problem.neumann_boundary("left_bottom", k_sand, left_bottom_nodes, neumann_cond)
 problem.neumann_boundary("right_top", k_rock, right_top_nodes, neumann_cond)
 problem.neumann_boundary("right_bottom", k_rock, right_bottom_nodes, neumann_cond)
 
-# dirichlet boundaries
+# Dirichlet boundaries
 problem.dirichlet_boundary("izq", left_nodes, left_dirichlet)
 problem.dirichlet_boundary("der", right_nodes, right_dirichlet)
-problem.dirichlet_boundary("right_circle", right_circ_nodes, lambda p: 0.75 - p[0]/3)
+problem.dirichlet_boundary("right_circle", right_circ_nodes, lambda p: 0.75 - p[0] / 3.0)
 
-# interfaces
+# Planar and circular interface conditions
 problem.interface(
     "left_circle",
     k_sand,
@@ -117,9 +116,8 @@ problem.interface(
     beta,
     None,
     left_half_nodes,
-    left_circ_mat_nodes
+    left_circ_mat_nodes,
 )
-
 problem.interface(
     "line",
     k_sand,
@@ -129,29 +127,24 @@ problem.interface(
     beta,
     None,
     left_half_nodes,
-    right_half_nodes
+    right_half_nodes,
 )
 
-# %% [markdown]
-# # Problem solution
-# 
-# For problems with a continuous solution $u$ ($u_{M_0} - u_{M_1} = \alpha$, with $\alpha = 0$), it is preferable to use the `create_system_K_F_cont_U` function from the `GFDMI` module.
+# =============================================================================
+# 4. Continuous System Assembly and Solution
+# =============================================================================
+K, F = problem.continuous_discretization()
+U = spsolve(K, F)
 
-# %%
-K,F = problem.continuous_discretization()
-
-U = spsolve(K,F)
-
-# %% [markdown]
-# # Plotting solution
-
-# %%
-# 2D contour plot with interface nodes overlay
+# =============================================================================
+# 5. Visualization and Post-Processing
+# =============================================================================
 overlay_interfaces = {
     "Left circle": left_circ_nodes,
     "Right circle": right_circ_nodes,
     "Interface": interface_nodes,
 }
+
 plot_solution_2d(
     coords,
     U,
@@ -164,8 +157,6 @@ plot_solution_2d(
     savepath="examples/legacy/figures/ex5/contourf.png",
 )
 
-# %%
-# 3D surface plot
 plot_solution_3d(
     coords,
     U,

@@ -1,51 +1,31 @@
-"""
-Laplace equation with sinusoidal interface, and jumps in `u` and `u_n`
-[Siraj-ul-Islam, Masood Ahmad]
+"""Example 02: Laplace Equation with Sinusoidal Interface and Analytical Verification.
 
-$ \nabla^2 u = f $
+This benchmark solves a 2D Poisson equation with a curved sinusoidal interface
+and prescribed jumps in potential :math:`u` and normal flux :math:`\\partial u / \\partial n`,
+based on the formulation by Siraj-ul-Islam and Masood Ahmad.
 
-with source:
+Governing Equation
+------------------
+.. math::
+    \\nabla^2 u = f(x, y) = 4
 
-$ f(x,y) = -2\pi^2\sin(\pi x)\sin(\pi y) $
+Analytical Solution
+-------------------
+.. math::
+    u(x, y) = \\begin{cases}
+    \\sin(\\pi x) \\sin(\\pi y), & (x, y) \\in \\Omega^+ \\\\
+    \\sin(\\pi x)(\\sin(\\pi y) - e^{\\pi y}), & (x, y) \\in \\Omega^-
+    \\end{cases}
 
-jump conditions:
-
-$ u^+ - u^- = \sin(\pi x)e^{\pi y} $
-
-$
-\beta^+ \frac{\partial}{\partial n}u^+
--\beta^- \frac{\partial}{\partial n}u^-
-=
-\pi(
-    \cos(\pi x)e^{\pi y}n_x
-    + \sin(\pi x)e^{\pi y}n_y
-)
-$
-
-where
-$\beta^+ = \beta^- = 1$
-
-The exact solution is given by
-
-u(x,y) = 
-\sin(\pi x)\sin(\pi y)  in  \Omega^+
-\sin(\pi x)(\sin(\pi y) - e^{\pi y})  in  \Omega^-
-
-The interface is crated by using
-X = 0.5 + 0.1\sin(6.28 y)
-Y = y
+Interface Definition
+--------------------
+.. math::
+    x(y) = 0.5 + 0.1 \\sin(2\\pi y), \\quad y \\in [0, 1]
 """
 
-#%%
-# =============================================================================
-# Importing nedeed libraries
-# =============================================================================
-import numpy as np
+import json
 import matplotlib.pyplot as plt
-plt.style.use("seaborn-v0_8")
-plt.rcParams["legend.frameon"] = True
-plt.rcParams["legend.shadow"] = True
-plt.rcParams["figure.autolayout"] = True
+import numpy as np
 import scipy.sparse as sp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
@@ -55,9 +35,16 @@ from GFDFlow.visualization import (
     plot_solution_comparison_3d,
 )
 
-#%% Loading mesh from file
-import json
-with open('examples/legacy/meshes/mesh2.json', 'r') as file:
+# Configure visualization style
+plt.style.use("seaborn-v0_8")
+plt.rcParams["legend.frameon"] = True
+plt.rcParams["legend.shadow"] = True
+plt.rcParams["figure.autolayout"] = True
+
+# =============================================================================
+# 1. Load Mesh Data from File
+# =============================================================================
+with open("examples/legacy/meshes/mesh2.json", "r") as file:
     loaded_data = json.load(file)
 
 coords = np.array(loaded_data["coords"])
@@ -71,73 +58,110 @@ interface_right_nodes = np.array(loaded_data["interface_right_nodes"])
 support_stencils = {int(k): np.array(v) for k, v in loaded_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in loaded_data["M_pinv"].items()}
 
-#%% Problem parameters
-# L = [A, B, C, 2D, E, 2F] is the coefitiens vector from GFDM that aproximates
-# a differential lineal operator as:
-# \mathb{L}u = Au + Bu_{x} + Cu_{y} + Du_{xx} + Eu_{xy} + Fu_{yy}
-L = np.array([0,0,0,1,0,1])
-permeability_left = lambda p: 1
-permeability_right = lambda p: 1
-source = lambda p: 4
+# =============================================================================
+# 2. Problem Parameters and Boundary Definitions
+# =============================================================================
+L = np.array([0, 0, 0, 1, 0, 1])
+permeability_left = lambda p: 1.0
+permeability_right = lambda p: 1.0
+source = lambda p: 4.0
 
-def dirichlet_condition(p):
+
+def dirichlet_condition(p: np.ndarray) -> float:
+    """Evaluate Dirichlet boundary condition from the exact solution.
+
+    Parameters
+    ----------
+    p : np.ndarray
+        Spatial coordinates [x, y].
+
+    Returns
+    -------
+    float
+        Analytical Dirichlet potential value.
+    """
     if p[0] < 0.5:
-        value = np.sin(np.pi*p[0]) * np.sin(np.pi*p[1])
+        return float(np.sin(np.pi * p[0]) * np.sin(np.pi * p[1]))
     else:
-        value = np.sin(np.pi*p[0]) * (
-            np.sin(np.pi*p[1])
-            - np.exp(np.pi*p[1])
-        )
-    return value
+        return float(np.sin(np.pi * p[0]) * (np.sin(np.pi * p[1]) - np.exp(np.pi * p[1])))
 
-# normal vectors at interface left nodes
-def compute_normal_vecs(b):
-    normal_vecs = np.empty((b.shape[0], 2))
-    normal_vecs[:, 0] = 1.0
-    normal_vecs[:, 1] = -0.628 * np.cos(6.28 * coords[b, 1])
-    norms = np.linalg.norm(normal_vecs, axis=1, keepdims=True)
-    return normal_vecs / norms
+
+def compute_normal_vecs(b: np.ndarray) -> np.ndarray:
+    """Compute unit normal vectors along the sinusoidal interface.
+
+    Parameters
+    ----------
+    b : np.ndarray
+        Array of node indices on the interface curve.
+
+    Returns
+    -------
+    np.ndarray
+        Normalized 2D normal vectors with shape (len(b), 2).
+    """
+    normals = np.empty((b.shape[0], 2))
+    normals[:, 0] = 1.0
+    normals[:, 1] = -0.628 * np.cos(6.28 * coords[b, 1])
+    norms = np.linalg.norm(normals, axis=1, keepdims=True)
+    return normals / norms
+
 
 normal_vecs_left_interface = compute_normal_vecs(interface_left_nodes)
 normal_vecs_right_interface = compute_normal_vecs(interface_right_nodes)
 
-normal_vecs = np.zeros((coords.shape[0],2))
-normal_vecs[interface_left_nodes,:] = normal_vecs_left_interface
-normal_vecs[interface_right_nodes,:] = normal_vecs_right_interface
+normal_vecs = np.zeros((coords.shape[0], 2))
+normal_vecs[interface_left_nodes, :] = normal_vecs_left_interface
+normal_vecs[interface_right_nodes, :] = normal_vecs_right_interface
 
-# flux diference du/dn|_{left} - du/dn|_{rignt} = beta 
-def beta(p):
+
+def beta(p: np.ndarray) -> float:
+    """Evaluate analytical flux jump along the sinusoidal interface.
+
+    Parameters
+    ----------
+    p : np.ndarray
+        Point coordinates [x, y] on the interface.
+
+    Returns
+    -------
+    float
+        Flux jump condition value.
+    """
     i = np.argmin(
         np.sqrt(
-            (coords[interface_left_nodes,0]-p[0])**2
-            +
-            (coords[interface_left_nodes,1]-p[1])**2
+            (coords[interface_left_nodes, 0] - p[0]) ** 2
+            + (coords[interface_left_nodes, 1] - p[1]) ** 2
         )
     )
-    value = np.pi * (
-        np.cos(np.pi*p[0])
-        * np.exp(np.pi*p[1])
-        * normal_vecs[i,0]
-        +
-        np.sin(np.pi*p[0])
-        * np.exp(np.pi*p[1])
-        * normal_vecs[i,1]
+    val = np.pi * (
+        np.cos(np.pi * p[0]) * np.exp(np.pi * p[1]) * normal_vecs[i, 0]
+        + np.sin(np.pi * p[0]) * np.exp(np.pi * p[1]) * normal_vecs[i, 1]
     )
-    return value
+    return float(val)
 
-# solution difference u|_{left} - u|_{right} = alpha
-alpha = lambda p: -np.sin(np.pi*p[0]) * np.exp(np.pi*p[1])
 
-# problem definition
-problem = gfdmi(coords, triangles, normal_vecs, L, source, M_pinv=M_pinv, support_stencils=support_stencils)
+# Solution jump condition: u|_{left} - u|_{right} = alpha
+alpha = lambda p: -np.sin(np.pi * p[0]) * np.exp(np.pi * p[1])
 
-problem.material('material_left', permeability_left, omega_plus_nodes)
-problem.material('material_right', permeability_right, omega_minus_nodes)
+# =============================================================================
+# 3. GFDM Problem Initialization and Interface Setup
+# =============================================================================
+problem = gfdmi(
+    coords,
+    triangles,
+    normal_vecs,
+    L,
+    source,
+    M_pinv=M_pinv,
+    support_stencils=support_stencils,
+)
 
-problem.dirichlet_boundary('dirichlet', dirichlet_nodes, dirichlet_condition)
+problem.material("material_left", permeability_left, omega_plus_nodes)
+problem.material("material_right", permeability_right, omega_minus_nodes)
+problem.dirichlet_boundary("dirichlet", dirichlet_nodes, dirichlet_condition)
 
 problem.interface(
-    'interface0',
+    "interface0",
     permeability_left,
     permeability_right,
     interface_left_nodes,
@@ -145,17 +169,55 @@ problem.interface(
     beta,
     alpha,
     omega_plus_nodes,
-    omega_minus_nodes
+    omega_minus_nodes,
 )
 
+# =============================================================================
+# 4. System Assembly and Solution
+# =============================================================================
+K, F = problem.discontinuous_discretization()
+U = sp.linalg.spsolve(K, F)
 
-#%% Assembling system `KU=F`
-K,F = problem.discontinuous_discretization()
+# =============================================================================
+# 5. Exact Solution and Error Verification
+# =============================================================================
+def exact(p: np.ndarray) -> float:
+    """Evaluate closed-form exact solution at point p.
 
-#%% Solution of system `KU=F`
-U = sp.linalg.spsolve(K,F)
+    Parameters
+    ----------
+    p : np.ndarray
+        Spatial coordinate [x, y].
 
-#%% contourf
+    Returns
+    -------
+    float
+        Exact potential value.
+    """
+    if p[0] <= 0.5 + 0.1 * np.sin(6.28 * p[1]):
+        return float(np.sin(np.pi * p[0]) * np.sin(np.pi * p[1]))
+    else:
+        return float(np.sin(np.pi * p[0]) * (np.sin(np.pi * p[1]) - np.exp(np.pi * p[1])))
+
+
+Uex = np.array([exact(pt) for pt in coords])
+
+rmse = np.sqrt(np.mean((Uex - U) ** 2))
+norm2 = np.linalg.norm(Uex - U)
+norm_inf = np.max(np.abs(Uex - U))
+
+print("N = %d" % coords.shape[0])
+print("\n===============")
+print(f"RMSE = {rmse:1.4e}")
+print("===============")
+print(f"Norm 2 = {norm2:1.4e}")
+print("===============")
+print(f"Norm infinity = {norm_inf:1.4e}")
+print("===============")
+
+# =============================================================================
+# 6. Visualization
+# =============================================================================
 plot_solution_2d(
     coords,
     U,
@@ -165,22 +227,6 @@ plot_solution_2d(
     savepath="examples/legacy/figures/ex2/contourf.jpg",
 )
 
-#%% exact solution
-def exact(p):
-    if p[0] <= 0.5 + 0.1 * np.sin(6.28 * p[1]):
-        value = np.sin(np.pi*p[0]) * np.sin(np.pi*p[1])
-    else:
-        value = np.sin(np.pi*p[0]) * (
-            np.sin(np.pi*p[1])
-            - np.exp(np.pi*p[1])
-        )
-    return value
-
-Uex = np.zeros(shape=U.shape)
-for i in range(U.shape[0]):
-    Uex[i] = exact(coords[i,:])
-
-#%% normal vectors plot
 plot_normal_vectors(
     coords,
     normal_vecs,
@@ -189,7 +235,6 @@ plot_normal_vectors(
     savepath="examples/legacy/figures/ex2/normal_vectors.png",
 )
 
-#%% 3D plotting
 plot_solution_comparison_3d(
     coords,
     U,
@@ -197,31 +242,7 @@ plot_solution_comparison_3d(
     num_label="Numerical",
     exact_label="Exact",
     view_init=(20, -50),
-    savepath="examples/legacy/figures/ex2/3dplot.jpg"
+    savepath="examples/legacy/figures/ex2/3dplot.jpg",
 )
-
-#%% Root Mean Square Error
-RMSE = np.sqrt(
-    np.mean(
-        (Uex - U)**2
-    )
-)
-
-print("N = %d" %coords.shape[0])
-print("\n===============")
-print("RMSE = %1.4e" %RMSE)
-print("===============")
-
-# Norm 2
-n2 = np.linalg.norm(Uex-U)
-print("\n===============")
-print("Norm 2 = %1.4e" %n2)
-print("===============")
-
-# Norm infty
-ninf = np.max(np.max(np.abs(Uex-U)))
-print("\n===============")
-print("Norm infinity = %1.4e" %ninf)
-print("===============")
 
 plt.show()

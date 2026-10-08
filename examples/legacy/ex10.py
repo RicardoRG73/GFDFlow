@@ -1,32 +1,35 @@
-"""
-Solution to the Poisson equation
-\nabla^2 u = f
-in domain: `x in [-1,1]` and `y in [-1,1]`
-interface  in  `x**2 + y**2 == 0.25**2`
-material 0 in  `x**2 + y**2 >  0.25**2`
-material 1 in  `x**2 + y**2 <  0.25**2`
+"""Example 10: Stationary and Transient Diffusion with Circular Inclusion.
 
-stationary and non-stationary solutions
-\nabla^2 u + f = du/dt
-"""
+This example solves stationary and transient diffusion across a domain with
+a centered circular inclusion (:math:`r = 0.25`). It evaluates steady-state
+behavior and integrates time evolution using the implicit Crank-Nicolson scheme.
 
-# =====
-# Importing needed libraries
-# =====
-import numpy as np
-import matplotlib.pyplot as plt
-from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
-from GFDFlow.visualization import (
-    plot_geometry,
-    plot_mesh,
-    plot_nodes,
-    plot_normal_vectors,
-    plot_solution_2d,
-    plot_solution_3d,
-)
+Governing Equations
+-------------------
+* Stationary Problem:
+    .. math:: \\nabla^2 u = 0, \\quad (x, y) \\in [-1, 1] \\times [-1, 1]
+* Transient Diffusion:
+    .. math:: \\frac{\\partial u}{\\partial t} = \\nabla^2 u
+
+Materials and Conductivities
+----------------------------
+* Matrix (:math:`r > 0.25`): :math:`k_0 = 100.0`
+* Inclusion (:math:`r < 0.25`): :math:`k_1 = 1.0`
+"""
 
 import json
-with open('examples/legacy/meshes/mesh10.json', 'r') as file:
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import numpy as np
+import scipy.sparse as sp
+
+from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
+from GFDFlow.visualization import plot_solution_2d, plot_solution_3d
+
+# =============================================================================
+# 1. Load Mesh Data from File
+# =============================================================================
+with open("examples/legacy/meshes/mesh10.json", "r") as file:
     mesh_data = json.load(file)
 
 coords = np.array(mesh_data["coords"])
@@ -43,27 +46,32 @@ bm1 = np.array(mesh_data["bm1_nodes"])
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
+# =============================================================================
+# 2. Problem Parameters and Boundary Definitions
+# =============================================================================
+k0 = lambda p: 100.0                                    # Mat0 permeability
+k1 = lambda p: 1.0                                      # Mat1 permeability
+fd0 = lambda p: 0.0                                     # Dirichlet condition bottom
+fd1 = lambda p: np.sin(np.pi * (p[1] + 1) / 4)          # Dirichlet condition right
+fd2 = lambda p: np.sin(np.pi * (p[0] + 1) / 4)          # Dirichlet condition top
+fd3 = lambda p: 0.0                                     # Dirichlet condition left
+fi = lambda p: 0.0                                      # Interface flux balance
+fs = lambda p: 0.0                                      # Source term
 
-# =====
-# Problem parameters
-# =====
-k0 = lambda p: 100                                    # mat0 permeability
-k1 = lambda p: 1                                      # mat1 permeability
-fd0 = lambda p: 0                # Dirichlet condition down
-fd1 = lambda p: np.sin(np.pi*(p[1]+1)/4)                 # Dirichlet condition right
-fd2 = lambda p: np.sin(np.pi*(p[0]+1)/4)                 # dirichlet condition up
-fd3 = lambda p: 0                 # dirichlet condition left
-fi = lambda p: 0                            # interface condition
-delta = 0.01 * 0.2 * 0.5
-def fs(p):                                  # sourse
-    out = 0
-    return out
-L = np.array([0,0,0,2,0,2])                 # coefitients vector
+L = np.array([0, 0, 0, 2, 0, 2])
 
-from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
-import scipy.sparse as sp
-
-problem = gfdmi(coords, faces, normal_vecs, L, fs, M_pinv=M_pinv, support_stencils=support_stencils)
+# =============================================================================
+# 3. GFDM Problem Initialization and Stationary Solution
+# =============================================================================
+problem = gfdmi(
+    coords,
+    faces,
+    normal_vecs,
+    L,
+    fs,
+    M_pinv=M_pinv,
+    support_stencils=support_stencils,
+)
 problem.material("mat0", k0, bm0)
 problem.material("mat1", k1, bm1)
 
@@ -74,18 +82,15 @@ problem.dirichlet_boundary("left", b3, fd3)
 
 problem.interface("interf", k0, k1, bi, None, fi, None, bm0, bm1)
 
-# ====
-# Solution
-# ====
 K, F = problem.continuous_discretization()
+U = sp.linalg.spsolve(K, F)
 
-U = sp.linalg.spsolve(K,F)
-
-# =====
-# Plotting solution
-# =====
+# =============================================================================
+# 4. Stationary Visualization
+# =============================================================================
 plot_solution_3d(
-    coords, U,
+    coords,
+    U,
     triangles=faces,
     cmap="inferno",
     edge_color="k",
@@ -96,7 +101,8 @@ plot_solution_3d(
 )
 
 plot_solution_2d(
-    coords, U,
+    coords,
+    U,
     levels=20,
     cmap="inferno",
     title="Contour Solution",
@@ -105,36 +111,38 @@ plot_solution_2d(
     savepath="examples/legacy/figures/ex10/contourf_steady.png",
 )
 
-
-
-# =====
-# Crank-Nicolson
-# =====
+# =============================================================================
+# 5. Crank-Nicolson Implicit Time-Stepping
+# =============================================================================
 T = 0.1
 dt = 0.0001
-m = round(T/dt)
+m = round(T / dt)
 
 beta = np.ones(len(F))
-beta[np.hstack((b0,b1,b2,b3))] = 0  # Dirichlet boundaries
-A = sp.eye(len(F)) - dt/2 * sp.diags(beta) @ K
-B = sp.eye(len(F)) + dt/2 * sp.diags(beta) @ K
+beta[np.hstack((b0, b1, b2, b3))] = 0.0  # Zero out Dirichlet boundary rows
+A = sp.eye(len(F)) - dt / 2 * sp.diags(beta) @ K
+B = sp.eye(len(F)) + dt / 2 * sp.diags(beta) @ K
 
-# first time step solution
-U2 = np.zeros((m,len(F)))
+# Initialize time-step solution matrix
+U2 = np.zeros((m, len(F)))
 for i in b1:
-    U2[0,i] = fd1(coords[i])
+    U2[0, i] = fd1(coords[i])
 for i in b2:
-    U2[0,i] = fd2(coords[i])
+    U2[0, i] = fd2(coords[i])
 
-F[b1] = 0
-F[b2] = 0
+F[b1] = 0.0
+F[b2] = 0.0
 
-# next solutions
-for i in range(m-1):
-    U2[i+1] = sp.linalg.spsolve(A, B@U2[i] + dt*F)
+# March forward in time
+for i in range(m - 1):
+    U2[i + 1] = sp.linalg.spsolve(A, B @ U2[i] + dt * F)
 
+# =============================================================================
+# 6. Transient Visualization at Final Time
+# =============================================================================
 plot_solution_3d(
-    coords, U2[-1],
+    coords,
+    U2[-1],
     triangles=faces,
     cmap="inferno",
     edge_color="k",
@@ -146,7 +154,8 @@ plot_solution_3d(
 )
 
 plot_solution_2d(
-    coords, U2[-1],
+    coords,
+    U2[-1],
     levels=20,
     cmap="inferno",
     title=f"Crank-Nicolson, $t={T}$",
@@ -155,67 +164,45 @@ plot_solution_2d(
     savepath="examples/legacy/figures/ex10/contourf.png",
 )
 
+# =============================================================================
+# 7. Animation Generation and Export
+# =============================================================================
+fig = plt.figure(figsize=(10, 5))
+ax1 = fig.add_subplot(1, 2, 1, projection="3d")
+ax2 = fig.add_subplot(1, 2, 2)
 
-# animated plot
-from matplotlib.animation import FuncAnimation 
-fig = plt.figure(figsize=(10,5))
 
-ax1 = fig.add_subplot(1,2,1, projection="3d")
-ax2 = fig.add_subplot(1,2,2)
+def update(frame: int):
+    """Update animation frames for 3D surface and 2D contour subplots.
 
-index = U2.shape[0] - 1
-cont1 = ax1.plot_trisurf(
-    coords[:,0],
-    coords[:,1],
-    U2[-1],
-    cmap="inferno"
-)
-fig.colorbar(cont1)
-ax1.set_title("3D Solution")
-ax1.axis("equal")
+    Parameters
+    ----------
+    frame : int
+        Current time step index.
 
-cont2 = ax2.tricontourf(
-    coords[:,0],
-    coords[:,1],
-    U2[-1],
-    cmap="inferno",
-    levels=20
-)
-fig.colorbar(cont2)
-ax2.set_title("Contour Solution")
-ax2.axis("equal")
-fig.suptitle("Crank-Nicolson, t = {T:.4f}")
-
-zlims = (-10, 10)
-def update(frame):
+    Returns
+    -------
+    tuple
+        Tuple of matplotlib artists (cont1, cont2).
+    """
     ax1.clear()
     ax2.clear()
 
-    cont1 = ax1.plot_trisurf(
-        coords[:,0],
-        coords[:,1],
-        U2[frame],
-        cmap="inferno"
-    )
+    cont1 = ax1.plot_trisurf(coords[:, 0], coords[:, 1], U2[frame], cmap="inferno")
     ax1.set_title("3D Solution")
     ax1.axis("equal")
 
-    cont2 = ax2.tricontourf(
-        coords[:,0],
-        coords[:,1],
-        U2[frame],
-        cmap="inferno",
-        levels=20
-    )
+    cont2 = ax2.tricontourf(coords[:, 0], coords[:, 1], U2[frame], cmap="inferno", levels=20)
     ax2.set_title("Contour Solution")
     ax2.axis("equal")
-    fig.suptitle(f"Crank-Nicolson, t = {frame*dt:.4f}")
-    print(f"t = {frame*dt:.4f}", flush=True)
+    fig.suptitle(f"Crank-Nicolson, t = {frame * dt:.4f}")
+    print(f"t = {frame * dt:.4f}", flush=True)
 
     return cont1, cont2
 
-ani = FuncAnimation(fig, update, frames=range(0, U2.shape[0], 10), blit=False, interval=24)
 
-ani.save("examples/legacy/figures/ex10/solution.gif", writer='pillow', fps=24)
+ani = FuncAnimation(fig, update, frames=range(0, U2.shape[0], 10), blit=False, interval=24)
+ani.save("examples/legacy/figures/ex10/solution.gif", writer="pillow", fps=24)
+
 plt.savefig(f"examples/legacy/figures/ex10/solution_t={T}.png", dpi=300, bbox_inches="tight")
 plt.show()

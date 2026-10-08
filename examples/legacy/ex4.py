@@ -1,22 +1,45 @@
-#%%
-# =============================================================================
-# Importing needed libraries
-# =============================================================================
-import numpy as np
+"""Example 04: Multi-Material Seepage with Interface Triple Junctions.
+
+This example solves steady-state 2D potential flow across three geological
+materials (rock, clay, mixed) converging at multiple triple-junction interface
+intersection nodes.
+
+Governing Equation
+------------------
+.. math::
+    \\nabla^2 u = 0
+
+Materials and Conductivities
+----------------------------
+* Rock: :math:`k_r = 1.0`
+* Clay: :math:`k_c = 0.1`
+* Mixed: :math:`k_m = 0.5`
+
+Boundary Conditions
+-------------------
+* Left: Dirichlet, :math:`u = 8.0`
+* Right: Dirichlet, :math:`u = 0.0`
+* Top / Bottom: Neumann, :math:`\\partial u / \\partial n = 0`
+"""
+
+import json
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.sparse as sp
-
-plt.style.use("seaborn-v0_8")
-
-from scipy.integrate import solve_ivp
 
 from GFDFlow.GFDM import GFDMI_2D_problem as gfdmi
 from GFDFlow.visualization import plot_phreatic_surface, plot_solution_2d
 
+# Configure visualization style
+plt.style.use("seaborn-v0_8")
+plt.rcParams["legend.frameon"] = True
+plt.rcParams["legend.shadow"] = True
+plt.rcParams["figure.autolayout"] = True
 
-# loading mesh data
-import json
-with open("examples/legacy/meshes/mesh4.json","r") as f:
+# =============================================================================
+# 1. Load Mesh and Topology Data from File
+# =============================================================================
+with open("examples/legacy/meshes/mesh4.json", "r") as f:
     mesh_data = json.load(f)
 
 left_nodes = np.array(mesh_data["left_nodes"])
@@ -39,28 +62,22 @@ triangles = np.array(mesh_data["triangles"])
 support_stencils = {int(k): np.array(v) for k, v in mesh_data["support_stencils"].items()}
 M_pinv = {int(k): np.array(v) for k, v in mesh_data["M_pinv"].items()}
 
-
-#%%
 # =============================================================================
-# Problem parameters
+# 2. Problem Parameters and Boundary Definitions
 # =============================================================================
-L = np.array([0,0,0,1,0,1])
-kr = lambda p: 1        # conductivity of rock
-kc = lambda p: 1e-1     # conductivity of clay
-km = lambda p: 0.5      # conductivity of mixed
+L = np.array([0, 0, 0, 1, 0, 1])
+kr = lambda p: 1.0       # Rock conductivity
+kc = lambda p: 1e-1      # Clay conductivity
+km = lambda p: 0.5       # Mixed conductivity
+source = lambda p: 0.0
 
-# source term 
-source = lambda p: 0
+neumann_zero = lambda p: 0.0
+left_dirichlet = lambda p: 8.0
+right_dirichlet = lambda p: 0.0
+beta = lambda p: 0.0
 
-# boundary conditions
-neumann_zero = lambda p: 0
-left_dirichlet = lambda p: 8
-right_dirichlet = lambda p: 0
-beta = lambda p: 0
-
-#%%
 # =============================================================================
-# Assembling and solving system KU=F
+# 3. GFDM Problem Initialization and Domain Materials
 # =============================================================================
 problem = gfdmi(
     coords,
@@ -69,23 +86,22 @@ problem = gfdmi(
     L,
     source,
     M_pinv=M_pinv,
-    support_stencils=support_stencils
+    support_stencils=support_stencils,
 )
 
-# material domains
 problem.material("rock", kr, rock_nodes)
 problem.material("clay", kc, clay_nodes)
 problem.material("mixed", km, mixed_nodes)
 
-# dirichlet boaundaries
 problem.dirichlet_boundary("left", left_nodes, left_dirichlet)
 problem.dirichlet_boundary("right", right_nodes, right_dirichlet)
-
-# neumann boaundaries
 problem.neumann_boundary("bottom", kr, bottom_nodes, neumann_zero)
 problem.neumann_boundary("top", kr, top_nodes, neumann_zero)
 
-# interfaces
+# =============================================================================
+# 4. Interface and Multi-Material Intersection Definitions
+# =============================================================================
+# 6 interface segments separating rock, clay, and mixed lithologies
 problem.interface("interface_a", kr, km, interface_a_nodes, None, beta, None, rock_nodes, mixed_nodes)
 problem.interface("interface_b", kr, km, interface_b_nodes, None, beta, None, rock_nodes, mixed_nodes)
 problem.interface("interface_c", kc, kr, interface_c_nodes, None, beta, None, clay_nodes, rock_nodes)
@@ -93,31 +109,26 @@ problem.interface("interface_d", kc, km, interface_d_nodes, None, beta, None, cl
 problem.interface("interface_e", kc, kr, interface_e_nodes, None, beta, None, clay_nodes, rock_nodes)
 problem.interface("interface_f", kc, km, interface_f_nodes, None, beta, None, clay_nodes, mixed_nodes)
 
-# interface intersection
-center_node = 1
-#                   [center_node, interface1, interface2, material_between, source_center]
-problem.intersection("inters_1", center_node, "interface_a", "interface_d", "mixed", beta)
-problem.intersection("inters_2", center_node, "interface_d", "interface_c", "clay", beta)
-problem.intersection("inters_3", center_node, "interface_c", "interface_a", "rock", beta)
-center_node = 2
-problem.intersection("inters_4", center_node, "interface_b", "interface_e", "rock", beta)
-problem.intersection("inters_5", center_node, "interface_e", "interface_f", "clay", beta)
-problem.intersection("inters_6", center_node, "interface_f", "interface_b", "mixed", beta)
+# Multi-wedge angular intersections at central nodes 1 and 2
+center_node_1 = 1
+problem.intersection("inters_1", center_node_1, "interface_a", "interface_d", "mixed", beta)
+problem.intersection("inters_2", center_node_1, "interface_d", "interface_c", "clay", beta)
+problem.intersection("inters_3", center_node_1, "interface_c", "interface_a", "rock", beta)
 
-#%%
-# ====
-# Solution
-# ====
+center_node_2 = 2
+problem.intersection("inters_4", center_node_2, "interface_b", "interface_e", "rock", beta)
+problem.intersection("inters_5", center_node_2, "interface_e", "interface_f", "clay", beta)
+problem.intersection("inters_6", center_node_2, "interface_f", "interface_b", "mixed", beta)
+
+# =============================================================================
+# 5. System Assembly and Solution
+# =============================================================================
 K, F = problem.continuous_discretization()
-np.linalg.cond(K.toarray())
+U = sp.linalg.spsolve(K, F)
 
-U = sp.linalg.spsolve(K,F)
-
-#%%
-# =====
-# Plotting solution
-# =====
-# 2D contour plot
+# =============================================================================
+# 6. Visualization and Post-Processing
+# =============================================================================
 fig, ax = plot_solution_2d(
     coords,
     U,
@@ -131,4 +142,5 @@ fig, ax = plot_solution_2d(
     savepath="examples/legacy/figures/ex4/contourf.png",
 )
 plot_phreatic_surface(ax, coords, U, triangles=triangles, color="b", linewidths=2.0)
+
 plt.show()
