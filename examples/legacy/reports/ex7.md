@@ -77,6 +77,8 @@ The contour map exhibits the classic symmetric descending convective salt finger
 
 ![Elder Problem Final Concentration Field](../figures/ex7/contourf.png)
 
+![Elder Problem Concentration Animation](../figures/ex7/solution.gif)
+
 **Key Observations:**
 - **Plume Symmetry & Descent:** Dense fluid originating from the central top section descends vertically and bifurcates into symmetric convection cells.
 - **Upwelling Recirculation:** Displaced freshwater circulates upwards along the lateral boundaries, maintaining convective equilibrium.

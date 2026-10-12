@@ -201,8 +201,19 @@ def update(frame: int):
     return cont1, cont2
 
 
-ani = FuncAnimation(fig, update, frames=range(0, U2.shape[0], 10), blit=False, interval=24)
-ani.save("examples/legacy/figures/ex10/solution.gif", writer="pillow", fps=24)
+ani = FuncAnimation(fig, update, frames=range(0, U2.shape[0]//4, 1), blit=False, interval=12)
+ani.save("examples/legacy/figures/ex10/solution.gif", writer="pillow", fps=12)
 
+
+fig = plt.figure(figsize=(10, 5))
+ax1 = fig.add_subplot(1, 2, 1, projection="3d")
+ax2 = fig.add_subplot(1, 2, 2)
+cont1 = ax1.plot_trisurf(coords[:, 0], coords[:, 1], U2[-1], cmap="inferno")
+ax1.set_title("3D Solution")
+ax1.axis("equal")
+cont2 = ax2.tricontourf(coords[:, 0], coords[:, 1], U2[-1], cmap="inferno", levels=20)
+ax2.set_title("Contour Solution")
+ax2.axis("equal")
+fig.suptitle(f"Crank-Nicolson, t = {T:.4f}")
 plt.savefig(f"examples/legacy/figures/ex10/solution_t={T}.png", dpi=300, bbox_inches="tight")
 plt.show()

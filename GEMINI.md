@@ -28,7 +28,7 @@ clarify, then picks manual or autopilot. Say which and why in one line; switch i
 → `../ftd/SKILL.md` · `../sdd/SKILL.md`.
 
 **Where.** Default branch open (chosen at install, or nothing complex) → work on it, no branch
-question. Closed («ramas y PR», CI, team) → before each code change ask: this branch, a new one, or
+question. Closed ("branches and PRs", CI, team) → before each code change ask: this branch, a new one, or
 `rsc main unlock`? Never branch alone. Another session here → `.worktrees/<branch>`.
 
 Judge the **meaning**, not the wording: the trigger is semantic in any language. A bug fix restoring
@@ -52,7 +52,7 @@ name it and offer it. This runs mid-conversation, not only at project start.
    expertise — "mandar emails de bienvenida" → an email/outreach skill, though not one keyword
    overlaps. If nothing genuinely fits, say so
    and move on: a tangential suggestion is worse than none.
-3. Ask once, plainly: "Para esto instalaría `<id>`, que aún no tienes. ¿La instalo? (sí/no)".
+3. Ask once, plainly: "For this I would install `<id>`, which you don't have yet. Should I install it? (yes/no)".
 4. On yes, run `npx @ericrisco/rsc add <id>`, then continue the original task.
 
 Installing changes the user's environment, so it is always their call. One suggestion at a time,
@@ -105,7 +105,7 @@ Before handling the first request of a session, check the workspace:
   (one question: technical terms or analogies) before the task.
 - A clone (`.rsc.json` committed) is not first contact: ask that once, in one line, then continue
   with their task; with `.rsc/.profile-offered`, never again.
-- The user declines a harness here ("sin harness", "solo código") → create an empty
+- The user declines a harness here ("no harness", "code only") → create an empty
   `.rsc/.no-harness`, confirm in one line, and never auto-start `init` in this repo again.
 - With a profile, this gate is inert. Never re-onboard.
 
@@ -113,9 +113,9 @@ Before handling the first request of a session, check the workspace:
 
 Define a term at first use; never give a command, flag or path without saying what it does.
 
-## Orientación (siempre)
+## Orientation (always)
 
-Habla con la voz de `orient`: frases cortas, una idea por frase, al grano, y cada respuesta se entiende sola. Registro técnico o con analogías según `technical_level` en `02-DOCS/wiki/harness/user-profile.md`. Cierra cada turno con el **bloque-brújula** (📍 dónde estás · ➡️ siguiente, terminando en pregunta; ✅ y 🧭 cuando hay algo hecho o decidido). **Nunca termines en seco.** Protocolo completo: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defiere a §2 el "¿instalo la skill que falta?".)
+Speak with the voice of `orient`: short sentences, one idea per sentence, straight to the point, and each response stands on its own. Technical register or analogies based on `technical_level` in `02-DOCS/wiki/harness/user-profile.md`. Close each turn with the **compass block** (📍 where you are · ➡️ next, ending in a question; ✅ and 🧭 when something is done or decided). **Never end abruptly.** Complete protocol: skill `orient` → `skills/orient/references/orientation-contract.md`. (Defer "should I install the missing skill?" to §2.)
 
 **rsc updates.** Claude Code, Codex, Gemini CLI, Cursor and OpenCode check for a new rsc on their own. In any other assistant, run `node .rsc/auto-update.mjs` once on the first turn of a session and relay any notice it prints in one line; "up to date" needs no mention.
 
