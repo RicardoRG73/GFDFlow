@@ -2,7 +2,11 @@ import numpy as np
 import scipy.sparse as sp
 from typing import Callable, Dict, List, Tuple, Union, Optional
 import numpy.typing as npt
-from .utils import get_support_nodes_2D, compute_M_matrix
+from .utils import (
+    get_support_nodes_2D,
+    compute_M_matrix,
+    compute_M_matrix_neumann,
+)
 
 class GFDMI_2D_problem:
     """
@@ -52,10 +56,17 @@ class GFDMI_2D_problem:
             Array with shape (n, 2) containing coordinates of the n nodes.
         triangles : npt.NDArray[np.int_]
             Array with shape (m, 3) containing indices of the m triangles nodes.
+        normal_vectors : npt.NDArray[np.float64]
+            Array with shape (n, 2) containing outward unit normal vectors at boundary nodes.
         L : npt.NDArray[np.float64]
             Array [A, B, C, D, E, F] of differential operator coefficients.
         source : Callable[[npt.NDArray[np.float64]], float]
             Function taking a point [x, y] and returning the source value.
+        support_stencils : Optional[Dict[int, npt.NDArray[np.int_]]], optional
+            Precomputed support stencils for each node. If None, computed automatically.
+        M_pinv : Optional[Dict[int, npt.NDArray[np.float64]]], optional
+            Precomputed pseudo-inverse of M matrix for each node. If None, computed
+            automatically taking into account Neumann boundary normals.
         
         Raises
         ------
@@ -94,10 +105,15 @@ class GFDMI_2D_problem:
         else:
             self.support_stencils = support_stencils
         if M_pinv is None:
-            self.M_pinv = {
-                i: np.linalg.pinv(compute_M_matrix(i, self.support_stencils[i], self.coords))
-                for i in range(self.coords.shape[0])
-            }
+            self.M_pinv = {}
+            for i in range(self.coords.shape[0]):
+                if np.linalg.norm(self.normal_vectors[i]) > 1e-10:
+                    M = compute_M_matrix_neumann(
+                        i, self.support_stencils[i], self.coords, self.normal_vectors[i]
+                    )
+                else:
+                    M = compute_M_matrix(i, self.support_stencils[i], self.coords)
+                self.M_pinv[i] = np.linalg.pinv(M)
         else:
             self.M_pinv = M_pinv
     
