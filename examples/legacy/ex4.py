@@ -1,8 +1,8 @@
-"""Example 04: Multi-Material Seepage with Interface Triple Junctions.
+"""Example 04: Multi-Material Seepage in a Five-Layered Dam with Triple Junctions.
 
-This example solves steady-state 2D potential flow across three geological
-materials (rock, clay, mixed) converging at multiple triple-junction interface
-intersection nodes.
+This example solves steady-state 2D potential seepage through a five-layered dam,
+where internal interfaces define five distinct subdomains (rock, clay, mixed)
+converging at multiple triple-junction interface intersection nodes.
 
 Governing Equation
 ------------------
@@ -101,7 +101,7 @@ problem.neumann_boundary("top", kr, top_nodes, neumann_zero)
 # =============================================================================
 # 4. Interface and Multi-Material Intersection Definitions
 # =============================================================================
-# 6 interface segments separating rock, clay, and mixed lithologies
+# 6 interface segments separating the five subdomains (rock, clay, and mixed zones)
 problem.interface("interface_a", kr, km, interface_a_nodes, None, beta, None, rock_nodes, mixed_nodes)
 problem.interface("interface_b", kr, km, interface_b_nodes, None, beta, None, rock_nodes, mixed_nodes)
 problem.interface("interface_c", kc, kr, interface_c_nodes, None, beta, None, clay_nodes, rock_nodes)

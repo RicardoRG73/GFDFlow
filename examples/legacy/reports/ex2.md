@@ -53,10 +53,17 @@ $$x(y) = 0.5 + 0.1 \sin(2\pi y), \quad y \in [0, 1]$$
 Unit normal vectors $\mathbf{n} = (n_x, n_y)$ along the interface are derived analytically:
 $$\mathbf{n}(y) \propto \left(1, -0.2\pi \cos(2\pi y)\right)^T$$
 
-![Interface Normal Vectors](../figures/ex2/normal_vectors.png)
+![Domain Geometry](../figures/ex2/geometry.png)
 
-### 3.2 Nodal Discretization
+### 3.2 Nodal Discretization & Mesh
 Mesh data loaded from `mesh2.json` provides $N = 291$ total nodes categorized into $\Omega^+$, $\Omega^-$, outer Dirichlet nodes, and paired interface nodes with precomputed star stencils ($q \ge 5$) and pseudo-inverses $M^\dagger$ (see [Theory §4](../../../02-DOCS/wiki/theory.md#4-unweighted-least-squares-approximation-for-weight-calculation)).
+
+![Unstructured Triangular Mesh](../figures/ex2/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex2/nodes.png)
+
+![Interface Normal Vectors](../figures/ex2/normal_vectors.png)
 
 ---
 

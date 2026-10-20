@@ -42,8 +42,17 @@ Boundaries are classified into (see [Theory §6](../../../02-DOCS/wiki/theory.md
 ### 3.1 Domain Layout & Point Cloud
 Discretized with an unstructured mesh from `mesh8.json`, defining interior nodes, left/right Dirichlet nodes, and confining Neumann nodes with unit normal vectors $\mathbf{n}$.
 
-### 3.2 Support Stars
+![Domain Geometry](../figures/ex8/geometry.png)
+
+### 3.2 Support Stars & Mesh
 Each interior and boundary node is assigned a support star with $q \ge 5$ spatial neighbors, computing the local moment matrix and its Moore-Penrose pseudo-inverse $M^\dagger$.
+
+![Unstructured Triangular Mesh](../figures/ex8/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex8/nodes.png)
+
+![Normal Vectors](../figures/ex8/normal_vectors.png)
 
 ---
 

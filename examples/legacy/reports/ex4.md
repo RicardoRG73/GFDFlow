@@ -6,8 +6,8 @@
 
 ## 1. Executive Summary
 
-- **Objective:** Simulate 2D potential seepage through a complex geological domain with three distinct materials meeting at multiple triple-junction interface intersection nodes.
-- **Domain Type:** Multi-material heterogeneous domain partitioned into rock, clay, and mixed lithologies.
+- **Objective:** Simulate 2D potential seepage through a five-layered dam, where internal interfaces create five distinct subdomains (each with independent material properties controlled in the parameters subsection) meeting at multiple triple-junction interface intersection nodes.
+- **Domain Type:** Five-layered dam partitioned into five distinct subdomains with independent material properties.
 - **Governing Physics:** Steady-state Laplace groundwater potential flow ($\nabla^2 u = 0$) with material conductivities ($k_r = 1.0$, $k_c = 0.1$, $k_m = 0.5$).
 - **Key Validation Points:** Treatment of interface triple-junction points using `problem.intersection` to enforce directional flux balance where three materials converge at a single vertex.
 - **Associated Code:** [`../ex4.py`](../ex4.py)
@@ -45,15 +45,24 @@ The system features a network of 6 interface segments and 2 triple intersection 
 ## 3. Geometry and Spatial Discretization
 
 ### 3.1 Domain Layout & Multiple Interfaces
-The domain is partitioned into polygonal geological blocks:
+The domain represents a five-layered dam partitioned into five distinct subdomains by six internal interface segments:
 - **Center Node 1:** Intersection of `interface_a`, `interface_d`, and `interface_c` between mixed, clay, and rock domains.
 - **Center Node 2:** Intersection of `interface_b`, `interface_e`, and `interface_f` between rock, clay, and mixed domains.
 
-### 3.2 Nodal Discretization
+![Domain Geometry](../figures/ex4/geometry.png)
+
+### 3.2 Nodal Discretization & Mesh
 From `mesh4.json`:
 - Interior sets for each lithology: `rock_nodes`, `clay_nodes`, `mixed_nodes`
 - 6 interface nodal sets: `interface_a_nodes` through `interface_f_nodes`
 - Precomputed support stencils and pseudo-inverses $M^\dagger$.
+
+![Unstructured Triangular Mesh](../figures/ex4/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex4/nodes.png)
+
+![Normal Vectors](../figures/ex4/normal_vectors.png)
 
 ---
 

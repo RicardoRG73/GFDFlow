@@ -141,7 +141,7 @@ plot_solution_2d(
     title="Tailings Dam Hydraulic Head Distribution",
     xlabel="X (m)",
     ylabel="Y (m)",
-    figsize=(10, 10),
+    figsize=(10, 4),
     overlay_nodes=interface_overlay,
     savepath="examples/legacy/figures/ex11/contourf.png",
 )

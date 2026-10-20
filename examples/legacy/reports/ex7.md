@@ -39,8 +39,17 @@ where $\operatorname{Ra}$ is the Rayleigh number governing convective instabilit
 ### 3.1 Domain Layout
 The rectangular domain is discretized with an unstructured point cloud of $N = 1326$ nodes (loaded from `mesh7.json`), with refined nodal resolution beneath the central infiltration zone.
 
-### 3.2 Discrete Differential Operators
+![Domain Geometry](../figures/ex7/geometry.png)
+
+### 3.2 Discrete Differential Operators & Mesh
 Discrete GFDM operators $\mathbf{D}_x, \mathbf{D}_y, \mathbf{D}^2$ are constructed with precomputed Delaunay star stencils and pseudo-inverses $M^\dagger$.
+
+![Unstructured Triangular Mesh](../figures/ex7/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex7/nodes.png)
+
+![Normal Vectors](../figures/ex7/normal_vectors.png)
 
 ---
 

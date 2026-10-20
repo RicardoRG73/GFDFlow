@@ -69,7 +69,7 @@ Nodal sets are partitioned into:
 - **Right Nodes:** Neumann condition ($\partial u / \partial n = 0$)
 - **Interior Nodes:** Governing Poisson equation ($\nabla^2 u = -2$)
 
-![Boundary Node Classification](../figures/ex0/boundaries.png)
+![Boundary Node Classification](../figures/ex0/nodes.png)
 
 For the curved Neumann right boundary, outward unit normal vectors $\mathbf{n} = (n_x, n_y)$ were computed geometrically to enforce directional flux constraints via the ghost-node formulation (see [Theory §6.2](../../../02-DOCS/wiki/theory.md#62-neumann-boundary-conditions-and-ghost-node-formulation)).
 

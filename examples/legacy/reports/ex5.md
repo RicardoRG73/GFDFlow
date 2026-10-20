@@ -49,11 +49,20 @@ Boundaries and internal interfaces (see [Theory §6](../../../02-DOCS/wiki/theor
 ### 3.1 Domain Layout
 The domain is divided into a left region (sand) and a right region (rock). The sand region encloses a circular low-permeability obstacle ($k = 0.1$), and the rock region features an internal circular Dirichlet boundary.
 
-### 3.2 Nodal Discretization
+![Domain Geometry](../figures/ex5/geometry.png)
+
+### 3.2 Nodal Discretization & Mesh
 From `mesh5.json`:
 - Boundary node groupings for straight and circular perimeters
 - Interface node sets for both vertical and circular boundaries
 - Support stencils and pseudo-inverse moment matrices precomputed for all mesh nodes.
+
+![Unstructured Triangular Mesh](../figures/ex5/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex5/nodes.png)
+
+![Normal Vectors](../figures/ex5/normal_vectors.png)
 
 ---
 

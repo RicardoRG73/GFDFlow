@@ -10,3 +10,4 @@
 - [GFDM Theory](theory.md)
 - [User Manual](user_manual.md)
 - [API Reference](api_reference.md)
+- [Skills Summary](skills_summary.md)

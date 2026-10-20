@@ -59,7 +59,7 @@ Boundary conditions are applied to designated node sets (see [Theory §6](../../
 - **Boundary Node Partition:** [List or summarize node groups: interior, boundary subsets]
 - **Neumann Normal Vectors:** Outward unit normal vectors $\mathbf{n} = (n_x, n_y)$ computed on derivative boundaries to configure ghost-node constraints (see [Theory §6.2](../../../02-DOCS/wiki/theory.md#62-neumann-boundary-conditions-and-ghost-node-formulation)).
 
-![Boundary Subsets](../figures/exX/boundaries.png)
+![Boundary Subsets](../figures/exX/nodes.png)
 ![Normal Vectors](../figures/exX/normal_vectors.png)
 
 ---

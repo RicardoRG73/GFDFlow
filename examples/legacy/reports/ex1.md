@@ -48,11 +48,20 @@ The boundary and interface conditions are assigned as follows (see [Theory §6](
 ### 3.1 Domain Definition
 The composite domain is bounded within planar rectangular boundaries, divided vertically into two subdomains with independent node groupings for `material0` and `material1`.
 
+![Domain Geometry](../figures/ex1/geometry.png)
+
 ### 3.2 Nodal Point Cloud & Interface Sets
 The mesh loaded from `mesh1.json` categorizes nodes into:
 - Left and right exterior Dirichlet boundaries (`left_nodes`, `right_nodes`)
 - Top and bottom Neumann boundaries (`top_left_nodes`, `top_right_nodes`, `bottom_left_nodes`, `bottom_right_nodes`)
 - Duplicate paired interface nodes (`left_interface_nodes`, `right_interface_nodes`) to support discontinuous function values across the boundary.
+
+![Unstructured Triangular Mesh](../figures/ex1/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex1/nodes.png)
+
+![Normal Vectors](../figures/ex1/normal_vectors.png)
 
 ---
 

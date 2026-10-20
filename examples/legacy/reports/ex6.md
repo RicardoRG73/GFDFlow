@@ -44,11 +44,20 @@ The coupled system is formulated in state vector $\mathbf{U} = [\boldsymbol{\psi
 ### 3.1 Domain Layout
 The computational domain spans $[0, 2] \times [0, 1]$. Mesh data loaded from `mesh6.json` defines $N = 2748$ nodes and associated triangular elements.
 
-### 3.2 Discrete Operator Matrices
+![Domain Geometry](../figures/ex6/geometry.png)
+
+### 3.2 Discrete Operator Matrices & Mesh
 GFDFlow generates discrete differential matrices:
 - First-order spatial derivatives: $\mathbf{D}_x \approx \frac{\partial}{\partial x}$, $\mathbf{D}_y \approx \frac{\partial}{\partial y}$
 - Second-order Laplacian: $\mathbf{D}^2 \approx \nabla^2$
 - Ghost-node projection for Neumann conditions along top and bottom boundaries.
+
+![Unstructured Triangular Mesh](../figures/ex6/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex6/nodes.png)
+
+![Normal Vectors](../figures/ex6/normal_vectors.png)
 
 ---
 

@@ -45,11 +45,20 @@ Layer and boundary specifications (see [Theory §6](../../../02-DOCS/wiki/theory
 ### 3.1 Domain Layout
 The domain represents a horizontal channel stratified into rock sections enclosing an intermediate low-permeability clay layer.
 
+![Domain Geometry](../figures/ex3/geometry.png)
+
 ### 3.2 Nodal Discretization & Stencils
 Mesh data from `mesh3.json` specifies:
 - Rock interior nodes (`rock_nodes`) and clay interior nodes (`clay_nodes`)
 - Left and right interface boundaries (`left_interface_nodes`, `right_interface_nodes`)
 - Precomputed support stencils and pseudo-inverse moment matrices $M^\dagger$.
+
+![Unstructured Triangular Mesh](../figures/ex3/mesh.png)
+
+### 3.3 Boundary Classification & Normal Vectors
+![Boundary Node Classification](../figures/ex3/nodes.png)
+
+![Normal Vectors](../figures/ex3/normal_vectors.png)
 
 ---
 
