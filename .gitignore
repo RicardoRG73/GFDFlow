@@ -106,3 +106,5 @@ TASKS.md
 .gemini/commands/specify.toml
 .gemini/commands/tasks.toml
 .gemini/commands/verify.toml
+.gemini/rsc/connect-tool
+.gemini/rsc/design

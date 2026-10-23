@@ -7,10 +7,12 @@
     "analyze",
     "automation-strategy",
     "clarify",
+    "connect-tool",
     "constitution",
     "debug",
     "decision-challenge",
     "deprecation",
+    "design",
     "fable-operator",
     "ftd",
     "harness",
@@ -44,7 +46,7 @@
     "refuter-tests"
   ],
   "ownSkills": [],
-  "catalogVersion": "3.0.12",
+  "catalogVersion": "3.3.0",
   "tier": null,
   "optOuts": [
     "trunk-open"
