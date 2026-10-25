@@ -1,0 +1,47 @@
+This is BibTeX, Version 0.99d (TeX Live 2018)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: main_elsevier.aux
+The style file: cas-model2-names.bst
+Database file #1: DosMediosBib.bib
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+You've used 35 entries,
+            2990 wiz_defined-function locations,
+            954 strings with 13659 characters,
+and the built_in function-call counts, 23907 in all, are:
+= -- 1822
+> -- 934
+< -- 14
++ -- 381
+- -- 324
+* -- 2615
+:= -- 3437
+add.period$ -- 101
+call.type$ -- 35
+change.case$ -- 279
+chr.to.int$ -- 35
+cite$ -- 35
+duplicate$ -- 1800
+empty$ -- 1774
+format.name$ -- 441
+if$ -- 4446
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 346
+newline$ -- 186
+num.names$ -- 140
+pop$ -- 667
+preamble$ -- 1
+purify$ -- 247
+quote$ -- 0
+skip$ -- 508
+stack$ -- 0
+substring$ -- 1083
+swap$ -- 1286
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 306
+warning$ -- 0
+while$ -- 160
+width$ -- 0
+write$ -- 498

@@ -1,0 +1,307 @@
+\begin{thebibliography}{35}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\href}[2]{#2}
+\providecommand{\path}[1]{#1}
+\providecommand{\DOIprefix}{doi:}
+\providecommand{\ArXivprefix}{arXiv:}
+\providecommand{\URLprefix}{URL: }
+\providecommand{\Pubmedprefix}{pmid:}
+\providecommand{\doi}[1]{\href{http://dx.doi.org/#1}{\path{#1}}}
+\providecommand{\Pubmed}[1]{\href{pmid:#1}{\path{#1}}}
+\providecommand{\bibinfo}[2]{#2}
+\ifx\xfnm\relax \def\xfnm[#1]{\unskip,\space#1}\fi
+%Type = Incollection
+\bibitem[{Arnold et~al.(2000)Arnold, Brezzi, Cockburn and
+  Marini}]{arnold2000discontinuous}
+\bibinfo{author}{Arnold, D.N.}, \bibinfo{author}{Brezzi, F.},
+  \bibinfo{author}{Cockburn, B.}, \bibinfo{author}{Marini, D.},
+  \bibinfo{year}{2000}.
+\newblock \bibinfo{title}{Discontinuous galerkin methods for elliptic
+  problems}, in: \bibinfo{booktitle}{Discontinuous Galerkin Methods: Theory,
+  Computation and Applications}. \bibinfo{publisher}{Springer}, pp.
+  \bibinfo{pages}{89--101}.
+%Type = Article
+\bibitem[{Arnold et~al.(2005)Arnold, Brezzi and Marini}]{arnold2005family}
+\bibinfo{author}{Arnold, D.N.}, \bibinfo{author}{Brezzi, F.},
+  \bibinfo{author}{Marini, L.D.}, \bibinfo{year}{2005}.
+\newblock \bibinfo{title}{A family of discontinuous galerkin finite elements
+  for the reissner--mindlin plate}.
+\newblock \bibinfo{journal}{Journal of Scientific Computing}
+  \bibinfo{volume}{22}, \bibinfo{pages}{25--45}.
+%Type = Article
+\bibitem[{Benito et~al.(2001)Benito, Urena and Gavete}]{benito2001influence}
+\bibinfo{author}{Benito, J.}, \bibinfo{author}{Urena, F.},
+  \bibinfo{author}{Gavete, L.}, \bibinfo{year}{2001}.
+\newblock \bibinfo{title}{Influence of several factors in the generalized
+  finite difference method}.
+\newblock \bibinfo{journal}{Applied Mathematical Modelling}
+  \bibinfo{volume}{25}, \bibinfo{pages}{1039--1053}.
+%Type = Article
+\bibitem[{Benito et~al.(2003)Benito, Urena, Gavete and Alvarez}]{benito2003h}
+\bibinfo{author}{Benito, J.}, \bibinfo{author}{Urena, F.},
+  \bibinfo{author}{Gavete, L.}, \bibinfo{author}{Alvarez, R.},
+  \bibinfo{year}{2003}.
+\newblock \bibinfo{title}{An h-adaptive method in the generalized finite
+  differences}.
+\newblock \bibinfo{journal}{Computer methods in applied mechanics and
+  engineering} \bibinfo{volume}{192}, \bibinfo{pages}{735--759}.
+%Type = Article
+\bibitem[{Benito-Muñoz et~al.(2007)Benito-Muñoz, Urena-Prieto and
+  Gavete-Corvinos}]{benito2007solving}
+\bibinfo{author}{Benito-Muñoz, J.J.}, \bibinfo{author}{Urena-Prieto, F.},
+  \bibinfo{author}{Gavete-Corvinos, L.}, \bibinfo{year}{2007}.
+\newblock \bibinfo{title}{Solving parabolic and hyperbolic equations by the
+  generalized finite difference method}.
+\newblock \bibinfo{journal}{Journal of computational and applied mathematics}
+  \bibinfo{volume}{209}, \bibinfo{pages}{208--233}.
+%Type = Article
+\bibitem[{Boyer and Hubert(2008)}]{boyer2008finite}
+\bibinfo{author}{Boyer, F.}, \bibinfo{author}{Hubert, F.},
+  \bibinfo{year}{2008}.
+\newblock \bibinfo{title}{Finite volume method for 2d linear and nonlinear
+  elliptic problems with discontinuities}.
+\newblock \bibinfo{journal}{SIAM Journal on Numerical Analysis}
+  \bibinfo{volume}{46}, \bibinfo{pages}{3032--3070}.
+%Type = Article
+\bibitem[{Brezzi et~al.(2005)Brezzi, Hughes, Marini and
+  Masud}]{brezzi2005mixed}
+\bibinfo{author}{Brezzi, F.}, \bibinfo{author}{Hughes, T.J.},
+  \bibinfo{author}{Marini, L.D.}, \bibinfo{author}{Masud, A.},
+  \bibinfo{year}{2005}.
+\newblock \bibinfo{title}{Mixed discontinuous galerkin methods for darcy flow}.
+\newblock \bibinfo{journal}{Journal of Scientific Computing}
+  \bibinfo{volume}{22}, \bibinfo{pages}{119--145}.
+%Type = Article
+\bibitem[{Caviedes-Voulli{\`e}me et~al.(2013)Caviedes-Voulli{\`e}me, Garc{\i},
+  Murillo et~al.}]{caviedes2013verification}
+\bibinfo{author}{Caviedes-Voulli{\`e}me, D.}, \bibinfo{author}{Garc{\i}, P.},
+  \bibinfo{author}{Murillo, J.}, et~al., \bibinfo{year}{2013}.
+\newblock \bibinfo{title}{Verification, conservation, stability and efficiency
+  of a finite volume method for the 1d richards equation}.
+\newblock \bibinfo{journal}{Journal of hydrology} \bibinfo{volume}{480},
+  \bibinfo{pages}{69--84}.
+%Type = Article
+\bibitem[{Ch{\'a}vez-Negrete et~al.(2021)Ch{\'a}vez-Negrete,
+  Dom{\'\i}nguez-Mota, Lucas-Martinez, Tinoco-Ruiz and
+  Santana-Quinteros}]{chavez2021}
+\bibinfo{author}{Ch{\'a}vez-Negrete, C.}, \bibinfo{author}{Dom{\'\i}nguez-Mota,
+  F.J.}, \bibinfo{author}{Lucas-Martinez, S.}, \bibinfo{author}{Tinoco-Ruiz,
+  J.G.}, \bibinfo{author}{Santana-Quinteros, D.}, \bibinfo{year}{2021}.
+\newblock \bibinfo{title}{Generalized finite difference solution for the motz
+  problem}.
+\newblock \bibinfo{journal}{Revista Internacional de M{\'e}todos Num{\'e}ricos
+  para C{\'a}lculo y Dise{\~n}o en Ingenier{\'\i}a} \bibinfo{volume}{37}.
+%Type = Article
+\bibitem[{Ch{\'a}vez-Negrete et~al.(2018)Ch{\'a}vez-Negrete,
+  Dom{\'\i}nguez-Mota and Santana-Quinteros}]{chavez2018numerical}
+\bibinfo{author}{Ch{\'a}vez-Negrete, C.}, \bibinfo{author}{Dom{\'\i}nguez-Mota,
+  F.J.}, \bibinfo{author}{Santana-Quinteros, D.}, \bibinfo{year}{2018}.
+\newblock \bibinfo{title}{Numerical solution of richards’ equation of water
+  flow by generalized finite differences}.
+\newblock \bibinfo{journal}{Computers and Geotechnics} \bibinfo{volume}{101},
+  \bibinfo{pages}{168--175}.
+%Type = Article
+\bibitem[{Chen et~al.(2008)Chen, Zhou and Zheng}]{chen2008numerical}
+\bibinfo{author}{Chen, Y.}, \bibinfo{author}{Zhou, C.}, \bibinfo{author}{Zheng,
+  H.}, \bibinfo{year}{2008}.
+\newblock \bibinfo{title}{A numerical solution to seepage problems with complex
+  drainage systems}.
+\newblock \bibinfo{journal}{Computers and Geotechnics} \bibinfo{volume}{35},
+  \bibinfo{pages}{383--393}.
+%Type = Book
+\bibitem[{Cockburn et~al.(2012)Cockburn, Karniadakis and
+  Shu}]{cockburn2012discontinuous}
+\bibinfo{author}{Cockburn, B.}, \bibinfo{author}{Karniadakis, G.E.},
+  \bibinfo{author}{Shu, C.W.}, \bibinfo{year}{2012}.
+\newblock \bibinfo{title}{Discontinuous Galerkin methods: theory, computation
+  and applications}. volume~\bibinfo{volume}{11}.
+\newblock \bibinfo{publisher}{Springer Science \& Business Media}.
+%Type = Article
+\bibitem[{Deng and Wang(2017)}]{deng2017saturated}
+\bibinfo{author}{Deng, B.}, \bibinfo{author}{Wang, J.}, \bibinfo{year}{2017}.
+\newblock \bibinfo{title}{Saturated-unsaturated groundwater modeling using 3d
+  richards equation with a coordinate transform of nonorthogonal grids}.
+\newblock \bibinfo{journal}{Applied Mathematical Modelling}
+  \bibinfo{volume}{50}, \bibinfo{pages}{39--52}.
+%Type = Book
+\bibitem[{Desai and Zaman(2013)}]{desai2013advanced}
+\bibinfo{author}{Desai, C.S.}, \bibinfo{author}{Zaman, M.},
+  \bibinfo{year}{2013}.
+\newblock \bibinfo{title}{Advanced geotechnical engineering: Soil-structure
+  interaction using computer and material models}.
+\newblock \bibinfo{publisher}{CRC Press}.
+%Type = Article
+\bibitem[{Ewing et~al.(2001)Ewing, Iliev and Lazarov}]{ewing2001modified}
+\bibinfo{author}{Ewing, R.}, \bibinfo{author}{Iliev, O.},
+  \bibinfo{author}{Lazarov, R.}, \bibinfo{year}{2001}.
+\newblock \bibinfo{title}{A modified finite volume approximation of
+  second-order elliptic equations with discontinuous coefficients}.
+\newblock \bibinfo{journal}{SIAM Journal on Scientific Computing}
+  \bibinfo{volume}{23}, \bibinfo{pages}{1335--1351}.
+%Type = Book
+\bibitem[{Fredlund et~al.(2012)Fredlund, Rahardjo and Fredlund}]{fredlund2012}
+\bibinfo{author}{Fredlund, D.G.}, \bibinfo{author}{Rahardjo, H.},
+  \bibinfo{author}{Fredlund, M.D.}, \bibinfo{year}{2012}.
+\newblock \bibinfo{title}{Unsaturated soil mechanics in engineering practice}.
+\newblock \bibinfo{publisher}{John Wiley \& Sons}.
+%Type = Article
+\bibitem[{Galavi(2010)}]{galavi2010groundwater}
+\bibinfo{author}{Galavi, V.}, \bibinfo{year}{2010}.
+\newblock \bibinfo{title}{Groundwater flow, fully coupled flow deformation and
+  undrained analyses in plaxis 2d and 3d}.
+\newblock \bibinfo{journal}{Plaxis Report} .
+%Type = Article
+\bibitem[{Li et~al.(2019)Li, Fu, Gu and Song}]{li2019generalized}
+\bibinfo{author}{Li, P.W.}, \bibinfo{author}{Fu, Z.J.}, \bibinfo{author}{Gu,
+  Y.}, \bibinfo{author}{Song, L.}, \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{The generalized finite difference method for the
+  inverse cauchy problem in two-dimensional isotropic linear elasticity}.
+\newblock \bibinfo{journal}{International Journal of Solids and Structures}
+  \bibinfo{volume}{174}, \bibinfo{pages}{69--84}.
+%Type = Article
+\bibitem[{Liszka and Orkisz(1980)}]{liszka1980finite}
+\bibinfo{author}{Liszka, T.}, \bibinfo{author}{Orkisz, J.},
+  \bibinfo{year}{1980}.
+\newblock \bibinfo{title}{The finite difference method at arbitrary irregular
+  grids and its application in applied mechanics}.
+\newblock \bibinfo{journal}{Computers \& Structures} \bibinfo{volume}{11},
+  \bibinfo{pages}{83--95}.
+%Type = Misc
+\bibitem[{Ltd(2022)}]{geo2022heat}
+\bibinfo{author}{Ltd, G.S.I.}, \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{Heat and mass transfer modelling with geostudio}.
+%Type = Article
+\bibitem[{Luo et~al.(2021)Luo, Liu and Wang}]{luo2021isoparametric}
+\bibinfo{author}{Luo, Y.}, \bibinfo{author}{Liu, Y.}, \bibinfo{author}{Wang,
+  J.}, \bibinfo{year}{2021}.
+\newblock \bibinfo{title}{Isoparametric element analysis of two-dimensional
+  unsaturated transient seepage}.
+\newblock \bibinfo{journal}{Advances in Civil Engineering}
+  \bibinfo{volume}{2021}, \bibinfo{pages}{1--8}.
+%Type = Article
+\bibitem[{Perrone and Kao(1975)}]{perrone1975general}
+\bibinfo{author}{Perrone, N.}, \bibinfo{author}{Kao, R.}, \bibinfo{year}{1975}.
+\newblock \bibinfo{title}{A general finite difference method for arbitrary
+  meshes}.
+\newblock \bibinfo{journal}{Computers \& Structures} \bibinfo{volume}{5},
+  \bibinfo{pages}{45--57}.
+%Type = Article
+\bibitem[{Pour et~al.(2011)Pour, Shoshtari and Adib}]{pour2011numerical}
+\bibinfo{author}{Pour, M.A.}, \bibinfo{author}{Shoshtari, M.M.},
+  \bibinfo{author}{Adib, A.}, \bibinfo{year}{2011}.
+\newblock \bibinfo{title}{Numerical solution of richards equation by using of
+  finite volume method}.
+\newblock \bibinfo{journal}{World Applied Sciences Journal}
+  \bibinfo{volume}{14}, \bibinfo{pages}{1838--1842}.
+%Type = Article
+\bibitem[{Rom{\'a}n-Guti{\'e}rrez et~al.(2022)Rom{\'a}n-Guti{\'e}rrez,
+  Ch{\'a}vez-Negrete, Dom{\'\i}nguez-Mota, Guzm{\'a}n-Torres and
+  Tinoco-Guerrero}]{roman2022numerical}
+\bibinfo{author}{Rom{\'a}n-Guti{\'e}rrez, R.},
+  \bibinfo{author}{Ch{\'a}vez-Negrete, C.},
+  \bibinfo{author}{Dom{\'\i}nguez-Mota, F.},
+  \bibinfo{author}{Guzm{\'a}n-Torres, J.A.}, \bibinfo{author}{Tinoco-Guerrero,
+  G.}, \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{Numerical solution of density-driven groundwater
+  flows using a generalized finite difference method defined by an unweighted
+  least-squares problem}.
+\newblock \bibinfo{journal}{Frontiers in Applied Mathematics and Statistics}
+  \bibinfo{volume}{8}, \bibinfo{pages}{976958}.
+%Type = Article
+\bibitem[{Romano et~al.(1998)Romano, Brunone and Santini}]{romano1998numerical}
+\bibinfo{author}{Romano, N.}, \bibinfo{author}{Brunone, B.},
+  \bibinfo{author}{Santini, A.}, \bibinfo{year}{1998}.
+\newblock \bibinfo{title}{Numerical analysis of one-dimensional unsaturated
+  flow in layered soils}.
+\newblock \bibinfo{journal}{Advances in Water Resources} \bibinfo{volume}{21},
+  \bibinfo{pages}{315--324}.
+%Type = Article
+\bibitem[{Szymkiewicz and Helmig(2011)}]{szymkiewicz2011comparison}
+\bibinfo{author}{Szymkiewicz, A.}, \bibinfo{author}{Helmig, R.},
+  \bibinfo{year}{2011}.
+\newblock \bibinfo{title}{Comparison of conductivity averaging methods for
+  one-dimensional unsaturated flow in layered soils}.
+\newblock \bibinfo{journal}{Advances in Water Resources} \bibinfo{volume}{34},
+  \bibinfo{pages}{1012--1025}.
+%Type = Article
+\bibitem[{Tinoco-Guerrero et~al.(2018)Tinoco-Guerrero, Dom{\'\i}nguez-Mota,
+  Gaona-Arias, Ruiz-Zavala and Tinoco-Ruiz}]{tinoco2018stability}
+\bibinfo{author}{Tinoco-Guerrero, G.}, \bibinfo{author}{Dom{\'\i}nguez-Mota,
+  F.J.}, \bibinfo{author}{Gaona-Arias, A.}, \bibinfo{author}{Ruiz-Zavala,
+  M.L.}, \bibinfo{author}{Tinoco-Ruiz, J.G.}, \bibinfo{year}{2018}.
+\newblock \bibinfo{title}{A stability analysis for a generalized
+  finite-difference scheme applied to the pure advection equation}.
+\newblock \bibinfo{journal}{Mathematics and Computers in Simulation}
+  \bibinfo{volume}{147}, \bibinfo{pages}{293--300}.
+%Type = Article
+\bibitem[{Tinoco-Guerrero et~al.(2020)Tinoco-Guerrero, Dom{\'\i}nguez-Mota and
+  Tinoco-Ruiz}]{tinoco2020study}
+\bibinfo{author}{Tinoco-Guerrero, G.}, \bibinfo{author}{Dom{\'\i}nguez-Mota,
+  F.J.}, \bibinfo{author}{Tinoco-Ruiz, J.G.}, \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{A study of the stability for a generalized
+  finite-difference scheme applied to the advection--diffusion equation}.
+\newblock \bibinfo{journal}{Mathematics and Computers in Simulation}
+  \bibinfo{volume}{176}, \bibinfo{pages}{301--311}.
+%Type = Incollection
+\bibitem[{Tiwari and Kuhnert(2001)}]{tiwari2003finite}
+\bibinfo{author}{Tiwari, S.}, \bibinfo{author}{Kuhnert, J.},
+  \bibinfo{year}{2001}.
+\newblock \bibinfo{title}{Finite pointset method based on the projection method
+  for simulations of the incompressible navier-stokes equations}, in:
+  \bibinfo{booktitle}{Meshfree methods for partial differential equations}.
+  \bibinfo{publisher}{Springer}, pp. \bibinfo{pages}{373--387}.
+%Type = Article
+\bibitem[{Ureña-Priento et~al.(2011)Ureña-Priento, Benito-Mu{\~n}oz and
+  Gavete-Corvinos}]{Urena2011appli}
+\bibinfo{author}{Ureña-Priento, F.}, \bibinfo{author}{Benito-Mu{\~n}oz, J.J.},
+  \bibinfo{author}{Gavete-Corvinos, L.}, \bibinfo{year}{2011}.
+\newblock \bibinfo{title}{Application of the generalized finite difference
+  method to solve the advection--diffusion equation}.
+\newblock \bibinfo{journal}{Journal of Computational and Applied Mathematics}
+  \bibinfo{volume}{235}, \bibinfo{pages}{1849--1855}.
+%Type = Inproceedings
+\bibitem[{Venkatesh and Karumanchi(2016)}]{venkatesh2016distribution}
+\bibinfo{author}{Venkatesh, K.}, \bibinfo{author}{Karumanchi, S.R.},
+  \bibinfo{year}{2016}.
+\newblock \bibinfo{title}{Distribution of pore water pressure in an earthen dam
+  considering unsaturated-saturated seepage analysis}, in:
+  \bibinfo{booktitle}{E3S Web of Conferences}, \bibinfo{organization}{EDP
+  Sciences}. p. \bibinfo{pages}{19004}.
+%Type = Article
+\bibitem[{Wang et~al.(2018)Wang, Gu, Fan, Chen and Zhang}]{wang2018domain}
+\bibinfo{author}{Wang, Y.}, \bibinfo{author}{Gu, Y.}, \bibinfo{author}{Fan,
+  C.M.}, \bibinfo{author}{Chen, W.}, \bibinfo{author}{Zhang, C.},
+  \bibinfo{year}{2018}.
+\newblock \bibinfo{title}{Domain-decomposition generalized finite difference
+  method for stress analysis in multi-layered elastic materials}.
+\newblock \bibinfo{journal}{Engineering Analysis with Boundary Elements}
+  \bibinfo{volume}{94}, \bibinfo{pages}{94--102}.
+%Type = Article
+\bibitem[{Wang et~al.(2020)Wang, Gu and Liu}]{wang2020domain}
+\bibinfo{author}{Wang, Y.}, \bibinfo{author}{Gu, Y.}, \bibinfo{author}{Liu,
+  J.}, \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{A domain-decomposition generalized finite difference
+  method for stress analysis in three-dimensional composite materials}.
+\newblock \bibinfo{journal}{Applied Mathematics Letters} \bibinfo{volume}{104},
+  \bibinfo{pages}{106226}.
+%Type = Article
+\bibitem[{Zhang et~al.(2020)Zhang, Lin, Huang, Fan and Li}]{zhang2020solving}
+\bibinfo{author}{Zhang, T.}, \bibinfo{author}{Lin, Z.H.},
+  \bibinfo{author}{Huang, G.Y.}, \bibinfo{author}{Fan, C.M.},
+  \bibinfo{author}{Li, P.W.}, \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{Solving boussinesq equations with a meshless finite
+  difference method}.
+\newblock \bibinfo{journal}{Ocean Engineering} \bibinfo{volume}{198},
+  \bibinfo{pages}{106957}.
+%Type = Article
+\bibitem[{Zhu et~al.(2020)Zhu, Wu and Peng}]{zhu2020improved}
+\bibinfo{author}{Zhu, S.}, \bibinfo{author}{Wu, L.}, \bibinfo{author}{Peng,
+  J.}, \bibinfo{year}{2020}.
+\newblock \bibinfo{title}{An improved chebyshev semi-iterative method for
+  simulating rainfall infiltration in unsaturated soils and its application to
+  shallow landslides}.
+\newblock \bibinfo{journal}{Journal of Hydrology} \bibinfo{volume}{590},
+  \bibinfo{pages}{125157}.
+
+\end{thebibliography}
