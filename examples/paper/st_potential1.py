@@ -40,13 +40,13 @@ from GFDFlow.visualization import plot_phreatic_surface
 
 
 def load_mesh_data(
-    filepath: str = "examples/paper/stat_mesh1.json"
+    filepath: str = "examples/paper/mesh1.json"
 ) -> dict:
     """Load serialized mesh and precomputed GFDM stencils from JSON.
 
     Parameters
     ----------
-    filepath : str, default='examples/paper/stat_mesh1.json'
+    filepath : str, default='examples/paper/mesh1.json'
         Path to the JSON mesh file.
 
     Returns
@@ -56,7 +56,7 @@ def load_mesh_data(
     """
     if not os.path.exists(filepath):
         raise FileNotFoundError(
-            f"Mesh file {filepath} not found. Please run stat_mesh1.py first."
+            f"Mesh file {filepath} not found. Please run mesh1.py first."
         )
 
     with open(filepath, "r") as f:
@@ -143,12 +143,14 @@ def setup_and_solve(
     problem.neumann_boundary("top", kr, top_nodes, neumann_zero)
 
     # 3. Internal material interfaces
+    # Note: on interface_e (y in [-4, 0], foundation-clay) and interface_f (y in [0, 10], rock-clay),
+    # precomputed normal_vecs point from foundation/rock into clay, so m0 is foundation/rock and m1 is clay.
     problem.interface("interface_a", kr, kf, ia_nodes, None, beta, None, rock_nodes, foundation_nodes)
     problem.interface("interface_b", kr, kf, ib_nodes, None, beta, None, rock_nodes, foundation_nodes)
     problem.interface("interface_c", kc, kr, ic_nodes, None, beta, None, clay_nodes, rock_nodes)
     problem.interface("interface_d", kc, kf, id_nodes, None, beta, None, clay_nodes, foundation_nodes)
-    problem.interface("interface_e", kc, kr, ie_nodes, None, beta, None, clay_nodes, rock_nodes)
-    problem.interface("interface_f", kc, kf, if_nodes, None, beta, None, clay_nodes, foundation_nodes)
+    problem.interface("interface_e", kf, kc, ie_nodes, None, beta, None, foundation_nodes, clay_nodes)
+    problem.interface("interface_f", kr, kc, if_nodes, None, beta, None, rock_nodes, clay_nodes)
 
     # 4. Triple junction multi-wedge intersections
     # Node 1 at (20, 0): interfaces A, D, C meeting rockfill, clay, and foundation
@@ -156,10 +158,10 @@ def setup_and_solve(
     problem.intersection("inters_2", tj1, "interface_d", "interface_c", "clay", beta)
     problem.intersection("inters_3", tj1, "interface_c", "interface_a", "rock", beta)
 
-    # Node 2 at (30, 0): interfaces B, E, F meeting rockfill, clay, and foundation
-    problem.intersection("inters_4", tj2, "interface_b", "interface_e", "rock", beta)
+    # Node 2 at (30, 0): interfaces B, F, E meeting rockfill, clay, and foundation
+    problem.intersection("inters_4", tj2, "interface_b", "interface_f", "rock", beta)
     problem.intersection("inters_5", tj2, "interface_e", "interface_f", "clay", beta)
-    problem.intersection("inters_6", tj2, "interface_f", "interface_b", "foundation", beta)
+    problem.intersection("inters_6", tj2, "interface_e", "interface_b", "foundation", beta)
 
     # 5. Assemble and solve sparse linear system
     K, F = problem.continuous_discretization()
@@ -250,7 +252,7 @@ def main() -> None:
     print("==================================================================")
 
     # 1. Load precomputed mesh
-    mesh_path = "examples/paper/stat_mesh1.json"
+    mesh_path = "examples/paper/mesh1.json"
     print(f"Loading mesh data from: {mesh_path}")
     mesh_data = load_mesh_data(mesh_path)
     coords = np.array(mesh_data["coords"])
@@ -266,7 +268,7 @@ def main() -> None:
     # 3. Post-process and save figures
     fig_dir = "examples/paper/figures"
     print(f"Rendering and saving solution figures to: {fig_dir}...")
-    plot_and_save_results(coords, triangles, U, output_dir=fig_dir, show_plots=True)
+    plot_and_save_results(coords, triangles, U, output_dir=fig_dir, show_plots=False)
 
     print("==================================================================")
     print("Assembly and solution completed successfully.")
