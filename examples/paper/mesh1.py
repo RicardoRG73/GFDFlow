@@ -15,7 +15,7 @@ and pseudo-inverse matrices (M_pinv) for each node.
 
 Outputs
 -------
-- JSON: `examples/paper/stat_mesh1.json`
+- JSON: `examples/paper/mesh1.json`
 - Figures: `examples/paper/figures/{geometry,mesh,nodes,normal_vectors}.png`
 """
 
@@ -529,7 +529,7 @@ def main() -> None:
     )
 
     # 5. Export JSON
-    json_path = "examples/paper/stat_mesh1.json"
+    json_path = "examples/paper/mesh1.json"
     export_mesh_data(
         json_path,
         coords,
