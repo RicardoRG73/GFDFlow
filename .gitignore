@@ -108,3 +108,4 @@ TASKS.md
 .gemini/commands/verify.toml
 .gemini/rsc/connect-tool
 .gemini/rsc/design
+.gemini/rsc/ux
