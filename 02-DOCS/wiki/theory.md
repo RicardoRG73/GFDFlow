@@ -1,6 +1,6 @@
 # GFDFlow — Theoretical Reference
 
-Mathematical Foundations of the Generalized Finite Difference Method (GFDM), Crank-Nicolson Temporal Integration, and Unsaturated Seepage Modeling in `GFDFlow`.
+Mathematical Foundations of the Generalized Finite Difference Method (GFDM), Crank-Nicolson Temporal Integration, and Steady & Transient Unsaturated Seepage Modeling in `GFDFlow`.
 
 ---
 
@@ -53,9 +53,23 @@ Mathematical Foundations of the Generalized Finite Difference Method (GFDM), Cra
   - [15. Post-Processing: Phreatic Surface and Stream Function Flow Nets](#15-post-processing-phreatic-surface-and-stream-function-flow-nets)
     - [15.1. Pore Pressure Field and Phreatic Surface](#151-pore-pressure-field-and-phreatic-surface)
     - [15.2. Stream Function Formulation for 2D Flow Nets](#152-stream-function-formulation-for-2d-flow-nets)
-  - [16. Comparative Methodological Matrices](#16-comparative-methodological-matrices)
-  - [17. Synthesis and Implementation Recommendations for GFDFlow](#17-synthesis-and-implementation-recommendations-for-gfdflow)
-  - [18. References](#18-references)
+- **Part IV — Transient Unsaturated and Unconfined Seepage (XSLOPE Reference Formulation and Benchmark)**
+  - [16. Transient Seepage Formulation and Mass-Conservative Storage](#16-transient-seepage-formulation-and-mass-conservative-storage)
+    - [16.1. Governing Mixed vs. Head-Based Continuity Equation](#161-governing-mixed-vs-head-based-continuity-equation)
+    - [16.2. Sub-Element Storage Integration, Chord Splitting, and HRZ Lumped Storage](#162-sub-element-storage-integration-chord-splitting-and-hrz-lumped-storage)
+    - [16.3. Storage Properties: Specific Storage, Specific Yield, and Zone-Separated Capacity](#163-storage-properties-specific-storage-specific-yield-and-zone-separated-capacity)
+    - [16.4. Nonlinear Theta-Method Time Stepping and Hybrid Chord-Tangent Linearization](#164-nonlinear-theta-method-time-stepping-and-hybrid-chord-tangent-linearization)
+    - [16.5. Adaptive Time-Stepping and Local Truncation Error Control](#165-adaptive-time-stepping-and-local-truncation-error-control)
+    - [16.6. Time-Series Boundary Conditions, Dynamic Reservoir Hysteresis, and Exit-Face Cycling](#166-time-series-boundary-conditions-dynamic-reservoir-hysteresis-and-exit-face-cycling)
+    - [16.7. Transient Post-Processing, Divergent Flow Fields, Mass-Balance Ledger, and Rapid-Drawdown Staging](#167-transient-post-processing-divergent-flow-fields-mass-balance-ledger-and-rapid-drawdown-staging)
+  - [17. Benchmark Case Study: Zoned Earth Dam with Core (XSLOPE Sample 2 and Transient Drawdown)](#17-benchmark-case-study-zoned-earth-dam-with-core-xslope-sample-2-and-transient-drawdown)
+    - [17.1. Geometry, Anisotropic Material Properties, and Boundary Configuration](#171-geometry-anisotropic-material-properties-and-boundary-configuration)
+    - [17.2. Steady-State Unconfined Seepage Solution and Constitutive Sensitivity](#172-steady-state-unconfined-seepage-solution-and-constitutive-sensitivity)
+    - [17.3. Transient Reservoir Drawdown Extension and Differential Zone Drainage](#173-transient-reservoir-drawdown-extension-and-differential-zone-drainage)
+- **Part V — Methodological Synthesis and References**
+  - [18. Comparative Methodological Matrices](#18-comparative-methodological-matrices)
+  - [19. Synthesis and Implementation Recommendations for GFDFlow](#19-synthesis-and-implementation-recommendations-for-gfdflow)
+  - [20. References](#20-references)
 
 ---
 
@@ -1052,7 +1066,272 @@ where $N_d$ is the number of equipotential drops and $k_{\text{eq}} = \sqrt{k_1 
 
 ---
 
-## 16. Comparative Methodological Matrices
+# Part IV — Transient Unsaturated and Unconfined Seepage (XSLOPE Reference Formulation and Benchmark)
+
+## 16. Transient Seepage Formulation and Mass-Conservative Storage
+
+While steady seepage analysis captures long-term equilibrium once pore pressures have settled, critical geotechnical stability states frequently occur during active hydraulic transients: rapid reservoir drawdown over days, storm infiltration pulses, or multi-week dissipation of excess pore-water pressures in low-permeability cores. In transient conditions, the phreatic surface lags behind moving external water levels—most severely inside fine-grained zones—so the pore-pressure field $u_w(\boldsymbol{x}, t) = \gamma_w (h(\boldsymbol{x}, t) - z)$ depends directly on the instant examined.
+
+A transient seepage solver marches the hydraulic head field $h(\boldsymbol{x}, t)$ forward from a physically consistent initial condition under time-varying boundary schedules, archiving computed pore-pressure snapshots ("saved frames") for downstream limit-equilibrium (LEM), finite-element (FEM), or multi-stage rapid-drawdown stability analyses (XSLOPE Documentation, 2026b).
+
+---
+
+### 16.1. Governing Mixed vs. Head-Based Continuity Equation
+
+Removing the steady-state zero-accumulation assumption introduces temporal water storage and release into the Darcy-Buckingham continuity balance:
+
+$$\nabla \cdot \left( k_r(\psi) [\mathbf{K}] \nabla h \right) + Q = \frac{\partial \Phi(\psi)}{\partial t} = S(\psi) \frac{\partial h}{\partial t}$$
+
+where:
+- $\Phi(\psi)$: Volume of water stored per unit bulk volume of soil at pressure head $\psi = h - z$, measured relative to saturation.
+- $S(\psi) = \frac{d\Phi}{d\psi}$: Storage coefficient ($L^{-1}$), equal to elastic specific storage $S_s$ in saturated zones ($\psi \ge 0$) and to the retention curve's specific moisture capacity $C(\psi)$ in unsaturated zones ($\psi < 0$).
+- $Q$: Distributed volumetric source/sink rate ($T^{-1}$).
+
+Because the elevation datum $z$ is invariant in time ($\partial z / \partial t = 0$), $\frac{\partial \psi}{\partial t} = \frac{\partial h}{\partial t}$ in continuous time, making the **mixed form** $\frac{\partial \Phi(\psi)}{\partial t}$ and the **head form** $S(\psi)\frac{\partial h}{\partial t}$ analytically identical. Setting $S(\psi) \equiv 0$ recovers the steady unconfined equation identically, so transient seepage is a strict mathematical generalization of the steady formulation.
+
+Once time is discretized into finite steps $[t, t + \Delta t]$, however, the two forms cease to be equivalent:
+- Evaluating $S(\psi) \Delta h$ at a single instant misstates stored water wherever the phreatic surface crosses a node or element, because $S(\psi)$ jumps by orders of magnitude across $\psi = 0$, causing systematic step-by-step water gain or loss (cf. Section 13.2).
+- Following **Celia et al. (1990)**, XSLOPE discretizes the conservative mixed form directly over $[t, t + \Delta t]$ via a $\theta$-weighted scheme:
+
+$$\frac{\{\Delta W\}}{\Delta t} + \theta [\mathbf{K}] \{h\}_{t+\Delta t} + (1 - \theta) [\mathbf{K}] \{h\}_t = \{Q\}$$
+
+where $[\mathbf{K}(\{h\})]$ is the $k_r$-scaled global conductivity matrix and $\{\Delta W\}$ is the vector of exact nodal water uptake over the step. Saturated element stiffness matrices, $k_r$ sampling operators, and storage sub-triangles are assembled once prior to time marching and reused at every step.
+
+---
+
+### 16.2. Sub-Element Storage Integration, Chord Splitting, and HRZ Lumped Storage
+
+Rather than evaluating $\Phi(\psi)$ only at element vertices—which causes discontinuous node-by-node snapping as the water table crosses an element—the water $W_e$ held by element $e$ is integrated over its domain $\Omega_e$ with $\psi$ interpolated linearly over sub-triangles:
+
+| Element Family | Storage Sub-Triangle Decomposition | Linear-Front & Gardner Laws | van Genuchten Law |
+|---|---|---|---|
+| `tri3` | The element itself (1 triangle) | Exact analytical integral | 7-point quadrature |
+| `tri6` | 3 corner triangles + 1 center triangle (cut at midside nodes) | Exact analytical integral | 28 points ($4 \times 7$) |
+| `quad4` | 4 sub-triangles fanned from corner centroid | 112 points ($4 \times 4 \times 7$) | 28 points ($4 \times 7$) |
+| `quad8`, `quad9` | 8 sub-triangles fanned from element center | 224 points ($8 \times 4 \times 7$) | 56 points ($8 \times 7$) |
+
+1. **Dual Saturated/Unsaturated Split on Higher-Order & Quad Elements:** On `tri3` elements, one-third of the triangle area falls naturally to each vertex, matching its lumped mass weight $m_j$. On `tri6` and quadrilateral elements, sub-triangle areas do not reproduce nodal lumped weights; therefore, saturated elastic water $S_s \max(\psi, 0)$ is lumped directly at the nodes using **HRZ (Hinton–Rock–Zienkiewicz) special lumping weights** $m_j > 0$ (which coincide with row-summing on linear elements while remaining strictly positive on quadratic elements), and only unsaturated water above the phreatic surface $\Phi(\min(\psi, 0))$ is integrated over sub-triangles.
+2. **Quadrature Chord-Capacity Splitting:** Where quadrature points $q$ with weights $w_q$ and non-negative shape weights $\psi_q = \sum_j N_{qj} \psi_j$ ($N_{qj} \ge 0$) are used:
+
+$$W_e = \sum_q w_q \Phi(\psi_q), \qquad C_q^* = \frac{\Phi(\psi_q^{t+\Delta t}) - \Phi(\psi_q^t)}{\psi_q^{t+\Delta t} - \psi_q^t}$$
+
+   The element water increment $\Delta W_e = W_e^{t+\Delta t} - W_e^t$ partitions cleanly across nodes $j$:
+
+$$\Delta W_e = \sum_q w_q C_q^* \Delta \psi_q = \sum_j G_{ej} \Delta \psi_j, \qquad G_{ej} = \sum_q w_q N_{qj} C_q^*$$
+
+3. **Exact Sub-Triangle Partitioning (Piecewise-Linear Storage):** For Linear-Front and Gardner materials on `tri3`/`tri6` meshes, $\Phi(\psi)$ is piecewise linear with kinks at $\psi = 0$ and $\psi = h_0$, admitting a closed-form integral on each sub-triangle. Each sub-triangle's exact water change is shared among its three corners by averaging each corner's marginal contribution across all $3! = 6$ permutations in which the corners transition from $\psi^t$ to $\psi^{t+\Delta t}$ (evaluated from $2^3 = 8$ exact corner-state integrals).
+
+This sub-element formulation guarantees **three structural invariants**:
+- **Exact Global Water Conservation:** Summing nodal increments over the mesh reproduces $\sum_e \Delta W_e$ identically for any $\Delta t$, with each corner receiving zero uptake if $\Delta \psi_j = 0$ and matching the sign of $\Delta \psi_j$.
+- **Diagonal (Lumped) Storage Matrix:** Each node's storage term depends exclusively on its own head increment $\Delta \psi_j = \Delta h_j$. Whereas consistent (off-diagonal) mass matrices couple neighboring nodes and provoke non-physical pressure overshoot ahead of steep wetting fronts, HRZ diagonal lumping suppresses spurious oscillations unconditionally.
+- **Exact Recovery of Saturated Lumped Mass:** Whenever all nodes of an element remain saturated ($\psi \ge 0$) throughout a step, node $j$ stores exactly $m_j S_s \Delta \psi_j$ on every element family, reducing confined transient flow identically to a constant diagonal mass matrix (and likewise on any single linear branch of $\Phi$ on `tri3`).
+
+---
+
+### 16.3. Storage Properties: Specific Storage, Specific Yield, and Zone-Separated Capacity
+
+Transient storage is parameterized per material via two physical coefficients—saturated specific storage $S_s$ and unsaturated specific yield $S_y$—acting in **mutually exclusive pressure regimes**.
+
+#### A. Specific Storage $S_s$ (Saturated Compressibility, $\psi \ge 0$)
+Below the phreatic surface, water release or uptake is governed by elastic compression of the soil skeleton and expansion of pore water per unit change in hydraulic head ($S_s$ in dimensions of $L^{-1}$, e.g., $\text{m}^{-1}$; convert to $\text{ft}^{-1}$ via $S_{s,\text{ft}} = 0.3048 \, S_{s,\text{m}}$):
+
+| Soil / Rock Material | Representative $S_s$ ($\text{m}^{-1}$) | Soil / Rock Material | Representative $S_s$ ($\text{m}^{-1}$) |
+|---|---|---|---|
+| **Plastic / soft clay** | $10^{-3} \text{ – } 10^{-2}$ | **Dense sand and gravel** | $10^{-5} \text{ – } 10^{-4}$ |
+| **Stiff clay, dense silt** | $10^{-4} \text{ – } 10^{-3}$ | **Fissured / jointed rock** | $10^{-6} \text{ – } 10^{-5}$ |
+| **Sand** | $10^{-4} \text{ – } 10^{-3}$ | | |
+
+$S_s$ is mandatory for every material in a transient simulation because fully saturated, confined zones store water solely through skeletal and fluid compressibility.
+
+#### B. Specific Yield $S_y$ (Drainable Porosity, $\psi < 0$)
+Above the phreatic surface, storage is dominated by gravity drainage and pore filling as the water table translates vertically. Specific yield $S_y$ (dimensionless) is always smaller than total porosity because capillary forces retain residual water against gravity:
+
+| Soil Material | Representative $S_y$ (–) | Soil Material | Representative $S_y$ (–) |
+|---|---|---|---|
+| **Clean sand and gravel** | $0.15 \text{ – } 0.35$ | **Silt** | $0.03 \text{ – } 0.19$ |
+| **Fine sand** | $0.10 \text{ – } 0.28$ | **Clay** | $0.01 \text{ – } 0.05$ |
+
+*(Physical contrast: Finer, more plastic soils exhibit higher elastic $S_s$ due to skeletal compressibility, yet much lower $S_y$ due to strong capillary retention. For van Genuchten materials, $S_y$ coincides directly with drainable water content $\theta_s - \theta_r$.)*
+
+#### C. Zone-Separated Moisture Capacity $S(\psi)$ and Residual Storage Floor
+Unlike continuum formulations that add $S_s (\theta / \theta_s)$ into the vadose zone, geotechnical seepage solvers (XSLOPE, RS2, SEEP/W) apply $S_s$ **strictly in the saturated zone** ($\psi \ge 0$) and retention-curve drainage capacity **strictly in the unsaturated zone** ($\psi < 0$). In stiff soils with flat retention tails, adding $S_s$ above the water table would overwhelm true capillary drainage and artificially retard transient response by several-fold.
+
+1. **Linear-Front and Gardner Materials** (uniform boxcar draining band across $h_0 < \psi < 0$):
+
+$$S(\psi) = \begin{cases}
+S_s, & \psi \ge 0 \quad (\text{saturated}) \\
+\dfrac{S_y}{|h_0|}, & h_0 < \psi < 0 \quad (\text{draining band}) \\
+S_{\text{floor}}, & \psi \le h_0 \quad (\text{drained})
+\end{cases}$$
+
+2. **van Genuchten Materials** ($S_y := \theta_s - \theta_r$, $m = 1 - 1/n$):
+
+$$S(\psi) = \begin{cases}
+S_s, & \psi \ge 0 \\
+\max\!\left( S_y \dfrac{dS_e}{d\psi}, \, S_{\text{floor}} \right), & \psi < 0
+\end{cases}, \qquad S_e(\psi) = \left[ 1 + (\alpha |\psi|)^n \right]^{-m}$$
+
+3. **Unsaturated Residual Storage Floor ($S_{\text{floor}}$):** Because analytical retention derivatives decay toward zero deep in the dry zone ($\psi \ll h_0$), a node with $S(\psi) = 0$ becomes locally **elliptic**: its temporal accumulation term vanishes, rendering $\Delta t$ reduction powerless to restrain head swings or break exit-face active-set cycling. Enforcing a residual floor at $10^{-4}$ of the material's characteristic capacity scale—integrated consistently into $\Phi(\psi)$ so mass conservation remains exact—stores negligible water while guaranteeing parabolic diagonal regularization everywhere.
+
+---
+
+### 16.4. Nonlinear Theta-Method Time Stepping and Hybrid Chord-Tangent Linearization
+
+Rewriting the conservative step balance as a $\theta$-method for $\{h\}_{t+\Delta t}$:
+
+$$\frac{\{\Delta W\}}{\Delta t} + \theta [\mathbf{K}] \{h\}_{t+\Delta t} = \{Q\} - (1 - \theta) [\mathbf{K}] \{h\}_t$$
+
+- **Backward Euler ($\theta = 1$, Recommended Geotechnical Default):** Unconditionally $L$-stable (Section 9.4–9.5) and free of spurious oscillations across sharp wetting fronts or rapidly switching seepage/reservoir boundaries.
+- **Crank-Nicolson ($\theta = 0.5$):** Second-order accurate in time ($\mathcal{O}(\Delta t^2)$), optimal for smooth potential diffusion (Part II), but susceptible to ringing under abrupt boundary switching unless paired with Rannacher Backward-Euler startup steps.
+
+#### Within-Step Nonlinear Iteration Mechanics
+Because both $[\mathbf{K}(h)]$ (via $k_r(\psi)$) and $\{\Delta W(h)\}$ depend nonlinearly on $\{h\}_{t+\Delta t}$, each step solves a sequence of linearized systems:
+1. **Envelope Diagonal Storage Linearization:** At iterate $m$, $[\mathbf{K}]$ is rebuilt from $k_r(\psi^m)$ and the storage Jacobian diagonal at each node $j$ is taken as the **maximum of its step chord capacity and local tangent capacity**:
+   $$\tilde{C}_j^m = \max\!\left( C_{\text{chord}, j}^m, \, C_{\text{tangent}, j}^m \right)$$
+   Crucially, the exact water increment $\{\Delta W(\psi^m)\}$—not its linearization—enters the right-hand-side residual. Taking $\max(C_{\text{chord}}, C_{\text{tangent}})$ prevents an iterate that has overshot onto a flat branch (either the tiny saturated $S_s$ or the dry $10^{-4}$ floor) from seeing near-zero Jacobian stiffness while actual step water exchange $\Delta W$ is large.
+2. **Per-Node Sign-Reversal Damping:** Across sharp wetting/drying fronts, straddling elements can alternate between high and low $k_r$ states. Any node whose head update $\delta h_j$ reverses sign without shrinking by at least half has its subsequent update halved (compounding on repeated reversals and resetting once monotonic decay resumes).
+3. **Iterate Acceptance and Minimum-Sweep Rule:** Convergence is declared when $\max_j |\delta h_j| \le \text{tol} \times H_{\text{scale}}$ *and* the exit-face active set is stationary. The solver retains the iterate *from which* that small update was computed (since that state is proven to satisfy the conservative step equations within tolerance even under alternating updates), and never accepts at $m = 0$ without performing at least one verification sweep.
+
+---
+
+### 16.5. Adaptive Time-Stepping and Local Truncation Error Control
+
+To resolve rapid boundary transients accurately while accelerating smoothly through slow consolidation/drainage tails, $\Delta t_n$ is governed by four simultaneous controllers:
+
+1. **Local Time-Error Estimator:** Over step $\Delta t_n$, Backward Euler incurs a leading local truncation error of $\frac{1}{2}\Delta t_n^2 \ddot{h}$. Estimating $\ddot{h}$ at every free node $i \in \mathcal{F}$ from consecutive step rates gives:
+
+$$e_i \approx \frac{\Delta t_n^2}{\Delta t_n + \Delta t_{n-1}} \left| \frac{h_i^{n+1} - h_i^n}{\Delta t_n} - \frac{h_i^n - h_i^{n-1}}{\Delta t_{n-1}} \right|$$
+
+   The step size is chosen to hold $\max_{i \in \mathcal{F}} e_i \le \varepsilon_t H_{\text{scale}}$ (default `time_error_frac` $\varepsilon_t = 10^{-3}$, i.e., $0.1\%$ of characteristic head span); any step exceeding $2 \varepsilon_t H_{\text{scale}}$ is rejected and recomputed with a shorter $\Delta t_n$.
+2. **Free-Node Head-Change Limiter:** A step is rejected and halved whenever $\max_{i \in \mathcal{F}} |h_i^{n+1} - h_i^n| > 0.05 H_{\text{scale}}$ ($5\%$ of head span). Dirichlet boundary nodes ($i \in \mathcal{D}$) are **deliberately excluded** because an imposed step change in reservoir level jumps by its full amplitude regardless of $\Delta t$, which would otherwise collapse $\Delta t$ to $\Delta t_{\min}$.
+3. **Convergence-Based Step Growth and Floor Recovery:** Steps converging in few nonlinear iterations trigger multiplicative $\Delta t$ growth; slow convergence shrinks $\Delta t$. Non-convergent steps are halved down to $\Delta t_{\min}$, where the final iterate is force-accepted and `converged = False` is recorded in the solution ledger.
+4. **Exact Saved-Frame Schedule Clamping:** $\Delta t_n$ is strictly clamped to hit every scheduled output instant:
+
+$$\mathcal{T}_{\text{save}} = \{0\} \cup \operatorname{sort}\!\Big( \big( \mathcal{T}_{\text{interval}} \cup \mathcal{T}_{\text{explicit}} \cup \{t_{\text{stage 1}}, t_{\text{stage 2}}, t_{\text{stability}}\} \cup \mathcal{T}_{\text{breakpoints}} \big) \cap (0, T_{\text{end}}] \Big)$$
+
+   Consequently, **every saved frame is an exact solved discrete state—never a linear interpolation between steps** (since a blend of two nonlinear Richards fields satisfies neither mass balance nor boundary complementarity).
+
+---
+
+### 16.6. Time-Series Boundary Conditions, Dynamic Reservoir Hysteresis, and Exit-Face Cycling
+
+Transient runs generalize the three steady boundary classes—specified `head`, `exit face`, and specified `flux`—by binding values to named piecewise-linear time series $s(t)$ (`t1`…`t5` on XSLOPE's `tseep` sheet):
+- **Breakpoint Semantics:** Values interpolate linearly between defined $(t_k, s_k)$ pairs, remain constant prior to the first entry and after the last entry, ignore blank cells so independent series with distinct breakpoints can share a common time column, and represent **instantaneous vertical step jumps** whenever a timestamp $t_k$ is repeated on two consecutive rows with different values.
+- **Consistent Steady-State Initial Condition ($t = 0$):** Unless an explicit initial head vector is supplied, $h(\boldsymbol{x}, 0)$ is computed by evaluating all boundary series at $t = 0$ (taking the pre-step value if a step is anchored at $t = 0$) and solving the steady unconfined problem to a tightened tolerance of $10^{-6} H_{\text{scale}}$ (`max_iter = 2000`, vs. $10^{-4}$ for standalone steady runs).
+- **Unit-Flux Load Scaling:** Time-varying Neumann fluxes assemble a unit-flux boundary load vector $\{\hat{Q}_{\Gamma}\}$ once and scale it at each step by $q(t)$, exploiting linearity of boundary integrals in prescribed normal flux.
+
+#### Plain `head` vs. Dynamic Three-State `reservoir` Boundary
+On an exposed slope subjected to rising or falling pool levels $h(t)$, a plain `head` Dirichlet condition erroneously holds dry nodes above $h(t)$ in negative pressure (suction), artificially siphoning water out of the embankment. The `reservoir` boundary resolves free-water pool physics by tracking both the instantaneous pool elevation $h(t)$ and the **running historical maximum** $h_{\max}(t) = \max_{\tau \in [0, t]} h(\tau)$:
+
+```
+   Crest ▲
+         │   y > h_max(t)          ──► State 3: Not yet reached (No-flow: ∂h/∂n = 0)
+h_max(t) ├ - - - - - - - - - - - - - - Highest historical pool level
+         │   h(t) < y ≤ h_max(t)   ──► State 2: Uncovered saturated slope (Active Exit Face: ψ ≤ 0)
+    h(t) ├~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Current falling pool level (▽)
+         │   y ≤ h(t)              ──► State 1: Submerged (Dirichlet: h = h(t))
+    Base └───────────────────────────►
+```
+
+| Node Elevation $y_i$ | Boundary State | Physical Rationale |
+|---|---|---|
+| $y_i \le h(t)$ | **Submerged (Dirichlet)** | Held at hydrostatic pool head $h_i = h(t)$. |
+| $h(t) < y_i \le h_{\max}(t)$ | **Uncovered (Dynamic Exit Face)** | Soil behind newly exposed slope remains saturated and seeps freely back into atmosphere/emptying pool ($h_i = y_i$ if outflowing; released to no-flow once desaturated). |
+| $y_i > h_{\max}(t)$ | **Not Yet Reached (No-Flow)** | Sealed ($\partial h/\partial n = 0$) until rising water first submerges $y_i$; at $t = 0$, $h_{\max}(0) = h(0)$ so all nodes above initial pool start as no-flow. |
+
+#### Partly Wet Quadratic Exit-Face Edge Resolution
+On quadratic meshes (`tri6`, `quad8`, `quad9`), exit-face edges normally switch all-or-nothing across corner and midside nodes (Section 12.2). However, during transient migration an exit point passing across an edge renders both all-wet (over-draining upper corner) and all-dry (positive pressure at lower corner) states inadmissible, triggering active-set limit-cycling that collapses $\Delta t \to \Delta t_{\min}$. Whenever a step fails by revisiting a previously left active-set state, the solver switches *only the cycling edge* to per-node saturation testing for the remainder of that step, allowing the wet/dry transition to land cleanly on the midside node.
+
+---
+
+### 16.7. Transient Post-Processing, Divergent Flow Fields, Mass-Balance Ledger, and Rapid-Drawdown Staging
+
+1. **Separate Per-Frame Inflow and Outflow Rates:** Unlike steady flow—which possesses a single throughput $Q_{\text{total}}$—each transient frame reports independent boundary inflow $Q_{\text{in}}$ and outflow $Q_{\text{out}}$ (including boundary-node storage uptake). Their difference equals the instantaneous rate of domain water storage change:
+
+$$Q_{\text{in}}(t) - Q_{\text{out}}(t) = \frac{d}{dt} \sum_e W_e(t)$$
+
+   At $t = 0$ (steady initial state), $Q_{\text{in}}(0) = Q_{\text{out}}(0)$; during reservoir drawdown without recharge, $Q_{\text{in}} \to 0$ while $Q_{\text{out}} > 0$ surges and decays as stored pore water drains out of the shells and core.
+2. **Absence of Transient Stream-Function Flow Nets:** Streamlines drawn as equispaced flow channels exist *if and only if* the Darcy flux field $\mathbf{q}$ is divergence-free ($\nabla \cdot \mathbf{q} = 0$, Section 15.2). In transient seepage:
+
+$$\nabla \cdot \mathbf{q} = -S(\psi) \frac{\partial h}{\partial t} \neq 0$$
+
+   Because water continuously emerges from or enters storage throughout the interior, flux tubes are not conserved and **a transient frame has no stream-function flow net**. Flow direction—including flow reversal out of the upstream slope during drawdown—is read instead via **Darcy velocity vectors** $\mathbf{v} = -k_r(\psi)[\mathbf{K}]\nabla h$, recomputed on load from archived nodal heads and pressures (`{base}_tseep.csv` and `{base}_tseep_meta.json`).
+3. **Cumulative Mass-Balance Closure Ledger:** At every saved frame $t_k$, the metadata ledger compares total stored water change $\Delta W_{\text{mesh}}(t_k) = \sum_e W_e(t_k) - \sum_e W_e(0)$ against step-accumulated net boundary inflow $\int_0^{t_k} (Q_{\text{in}} - Q_{\text{out}})\,dt$. On converged runs, normalized closure error reflects only residual iteration tolerance (and vanishes to machine round-off on linear saturated problems).
+4. **Coupling to Slope Stability (`stability_time` and Rapid Drawdown `stage_1` / `stage_2`):**
+   - Single-state effective-stress stability analyses extract a single computed frame selected by explicit run `time` $\succ$ model `stability_time` $\succ$ final saved frame, simultaneously synchronizing external hydrostatic reservoir boundary loads to $h(t)$ at that exact instant.
+   - Three-stage **rapid-drawdown stability analyses** (e.g., Lowe–Karafiath / Duncan–Wright–Wong) extract two forced frames in memory (`stage_1` at full pool and `stage_2` after drawdown), populating pre-drawdown (`seep_u`) and post-drawdown (`seep_u2`) pore-pressure fields directly without intermediate steady approximations.
+
+---
+
+## 17. Benchmark Case Study: Zoned Earth Dam with Core (XSLOPE Sample 2 and Transient Drawdown)
+
+To illustrate the interplay between anisotropic layered permeability, unsaturated conductivity models, active-set exit faces, and transient reservoir drawdown storage lag, consider the canonical **Earth Dam with Core** benchmark from the XSLOPE verification suite (`xslope_earth_dam1.xlsx`, Sample Problem #2; XSLOPE Documentation, 2026c) and its transient drawdown companion (Tutorial SEEP-3).
+
+---
+
+### 17.1. Geometry, Anisotropic Material Properties, and Boundary Configuration
+
+The structure is a $22\text{ m}$ high, $110\text{ m}$ wide zoned embankment founded on an impervious horizontal rock base at elevation $y = 0\text{ m}$, retaining an $18\text{ m}$ upstream reservoir pool ($4\text{ m}$ freeboard below crest) against a $2\text{ m}$ downstream tailwater:
+
+![Problem sketch of the zoned earth dam with a clay core, granular shell, upstream pool, downstream tailwater, and anisotropic zone conductivities](images/earth_dam1_problem_sketch.png)
+
+*Figure 17.1. Cross-sectional geometry, hydraulic boundary levels, and anisotropic conductivities of the zoned Earth Dam with Core benchmark (source: XSLOPE Sample Problem #2, `https://xslope.org/en/latest/seep/images/earth_dam1_problem_sketch.png`).*
+
+#### Geometric Zone Coordinates (`xslope_earth_dam1.xlsx`)
+- **Outer Embankment Shell (`Mat 1`):** Crest of width $8\text{ m}$ spanning $(51, 22)\text{ m}$ to $(59, 22)\text{ m}$, upstream face from heel $(0, 0)\text{ m}$ through waterline $(42, 18)\text{ m}$ to $(51, 22)\text{ m}$ (slope $\approx 2.33\text{H}:1\text{V}$), and downstream face from $(59, 22)\text{ m}$ through tailwater $(105, 2)\text{ m}$ to toe $(110, 0)\text{ m}$ (slope $\approx 2.30\text{H}:1\text{V}$).
+- **Central Low-Permeability Clay Core (`Mat 2`):** Symmetrical trapezoid founded on rock from $(46, 0)\text{ m}$ to $(63, 0)\text{ m}$ ($17\text{ m}$ base width) and rising to $4\text{ m}$ below the crest from $(51, 18)\text{ m}$ to $(59, 18)\text{ m}$ ($8\text{ m}$ top width).
+
+#### Anisotropic Hydraulic and Unsaturated Parameters
+Compacted horizontal lifts induce horizontal-to-vertical permeability anisotropy ($k_1 / k_2 = 2.56$ in the shell and $2.50$ in the core, with principal axis angle $\alpha = 0^\circ$), alongside a $10:1$ contrast between granular shell and clay core conductivities:
+
+| Zone | Material Role | $k_1 = K_{xx}$ ($\text{m/yr}$) | $k_2 = K_{yy}$ ($\text{m/yr}$) | $\alpha$ ($^\circ$) | Unsat. Law | $kr_0$ (–) | $h_0$ ($\text{m}$) |
+|---|---|---|---|---|---|---|---|
+| **Shell (`Mat 1`)** | Compacted granular fill | $46.0$ | $18.0$ | $0.0$ | Linear Front (`lf`) | $0.01$ | $-0.3$ |
+| **Core (`Mat 2`)** | Compacted clay core | $4.5$ | $1.8$ | $0.0$ | Linear Front (`lf`) | $0.01$ | $-0.3$ |
+
+#### Boundary Condition Polylines
+1. **Upstream Reservoir Head (`Head BC #1`):** $h = 18.0\text{ m}$ along submerged upstream face $(0, 0) \to (42, 18)\text{ m}$.
+2. **Downstream Tailwater Head (`Head BC #2`):** $h = 2.0\text{ m}$ along submerged toe $(105, 2) \to (110, 0)\text{ m}$.
+3. **Downstream Seepage Face (`Exit Face`):** Active-set inequality constraint ($\psi = 0, \, q_{\text{out}} \ge 0$ vs. $\psi < 0, \, q_n = 0$) along the entire exposed downstream slope $(59, 22) \to (105, 2)\text{ m}$.
+4. **Impervious / Free-Air No-Flow ($\partial h / \partial n = 0$):** Foundation contact $y = 0\text{ m}$, crest $(51, 22) \to (59, 22)\text{ m}$, and dry upper upstream slope $(42, 18) \to (51, 22)\text{ m}$.
+
+---
+
+### 17.2. Steady-State Unconfined Seepage Solution and Constitutive Sensitivity
+
+Solving the nonlinear unconfined steady seepage system yields the total head distribution, phreatic surface ($u_w = 0 \iff h = y$), and stream-function flow net below:
+
+![Steady unconfined seepage solution showing total head contours, phreatic surface, flow lines, and total flowrate of 38.761 m³/yr per m](images/earth_dam1_solution.png)
+
+*Figure 17.2. Steady-state seepage solution for the zoned Earth Dam with Core (`Q = 38.761 m³/yr per m`), displaying total head color shading and equipotential contours, orthogonal stream-function flow lines below the phreatic surface, and atmospheric exit-face discharge above the tailwater (source: XSLOPE Sample Problem #2, `https://xslope.org/en/latest/seep/images/earth_dam1_solution.png`).*
+
+#### Key Physical and Numerical Observations
+1. **Core Head-Drop Concentration and Flow Refraction:** In the permeable upstream shell ($k_1 = 46\text{ m/yr}$), equipotential drops are wide and the phreatic surface remains nearly horizontal ($\approx 18.0\text{ m} \to 17.4\text{ m}$). Entering the clay core ($k_1 = 4.5\text{ m/yr}$), hydraulic gradients steepen tenfold, dissipating the majority of the $16\text{ m}$ head difference across the core width before refracting sharply downward into the downstream shell and emerging along the lower exit face just above the $2\text{ m}$ tailwater.
+2. **Mesh Resolution of the Unsaturated Front:** Because the linear front spans $|h_0| = 0.3\text{ m}$, coarse quadratic elements (`quad8` at $2.0\text{ m}$ size) can stall on unresolved intra-element conductivity jumps; refining to target size $0.6\text{ m}$ ($\approx 2$ elements across $|h_0|$) yields mesh- and element-convergent total flowrate **$Q = 38.754\text{--}38.761\text{ m}^3/\text{yr per m}$** within $0.3\%$ across all five element types (`tri3`, `tri6`, `quad4`, `quad8`, `quad9`).
+3. **Insensitivity of Bulk Discharge to Unsaturated Tail Law (Sample #3 Comparison):** Replacing the bilinear cutoff (`lf`) with smooth **van Genuchten (`vg`)** curves calibrated to representative USDA textures—sandy loam shell ($\alpha = 7.5\text{ m}^{-1}, \, n = 1.89$) and loam core ($\alpha = 3.6\text{ m}^{-1}, \, n = 1.56$)—produces **$Q \approx 37.8\text{ m}^3/\text{yr per m}$**, within $< 3\%$ of the linear-front discharge ($38.8\text{ m}^3/\text{yr per m}$). Below the phreatic surface $k_r \equiv 1$, confirming that total through-seepage and saturated pore pressures are controlled primarily by saturated $[\mathbf{K}]$ contrasts and interface flux continuity (Section 7).
+
+---
+
+### 17.3. Transient Reservoir Drawdown Extension and Differential Zone Drainage
+
+Extending this exact $22\text{ m} \times 110\text{ m}$ cored dam to a **transient reservoir drawdown** (XSLOPE Tutorial SEEP-3, time unit in days) demonstrates every transient mechanism of Section 16:
+- **Transient Material Parametrization:** Expressing daily conductivities and assigning representative sand and plastic-clay storage coefficients from Section 16.3:
+  - **Shell (`sand`):** $k_1 = 1.5\text{ m/day}$, $k_2 = 0.5\text{ m/day}$, $S_s = 3 \times 10^{-4}\text{ m}^{-1}$, $S_y = 0.22$.
+  - **Core (`clay`):** $k_1 = 0.012\text{ m/day}$, $k_2 = 0.005\text{ m/day}$, $S_s = 3 \times 10^{-3}\text{ m}^{-1}$, $S_y = 0.03$.
+- **Drawdown Schedule & `reservoir` Boundary:** The steady full-pool solution ($h = 18\text{ m}$) provides the exact $t = 0$ initial frame. Switching `Head BC #1` to a `reservoir` boundary bound to breakpoint series $(0\text{ d}, 18\text{ m}) \to (2\text{ d}, 18\text{ m}) \to (47\text{ d}, 2\text{ m})$ holds full pool for $2\text{ days}$, draws the reservoir down $16\text{ m}$ to tailwater level over $45\text{ days}$ at rate $v_{\text{pool}} = 16 / 45 = 0.36\text{ m/day}$, and tracks pore-pressure relaxation through $T_{\text{end}} = 360\text{ days}$.
+- **Differential Unconfined Drainage Scaling ($v_{\text{drain}} \sim k_2 / S_y$):** Because a falling phreatic surface drains predominantly downward under gravity, the maximum unconfined fall velocity of each zone scales as vertical conductivity divided by drainable porosity:
+
+$$v_{\text{drain, shell}} \approx \frac{k_{2,\text{shell}}}{S_{y,\text{shell}}} = \frac{0.5}{0.22} \approx 2.27\text{ m/day} \gg v_{\text{pool}}, \qquad v_{\text{drain, core}} \approx \frac{k_{2,\text{core}}}{S_{y,\text{core}}} = \frac{0.005}{0.03} \approx 0.17\text{ m/day} < \frac{1}{2} v_{\text{pool}}$$
+
+  Although the clay core's drainable porosity $S_y$ is $7\times$ smaller than the shell's, its vertical permeability $k_2$ is $100\times$ smaller, making the core drain **$14\times$ more slowly**:
+  1. During the $45\text{-day}$ drawdown, the upstream shell drains rapidly back into the emptying pool across newly uncovered `reservoir` exit-face nodes ($Q_{\text{in}} \to 0$, $Q_{\text{out}}$ spikes from released storage).
+  2. Inside the clay core, the water table falls only $5.8\text{ m}$ between $t = 2\text{ d}$ and $t = 47\text{ d}$ ($16.4\text{ m} \to 10.6\text{ m}$, observed rate $0.13\text{ m/day}$), leaving an elevated mound of high total head and positive pore pressure trapped inside the core long after the upstream stabilizing water load has vanished—precisely the critical mechanism governing rapid-drawdown slope failure in zoned embankment dams.
+
+---
+
+# Part V — Methodological Synthesis and References
+
+## 18. Comparative Methodological Matrices
 
 ### A. Temporal Integration Schemes for Parabolic GFDM Equations
 
@@ -1064,35 +1343,35 @@ where $N_d$ is the number of equipotential drops and $k_{\text{eq}} = \sqrt{k_1 
 | **Response to Step BCs / Jumps** | Blows up if $\Delta t > \Delta t_{\max}$ | Monotone, diffusive | Ringing if $\Delta t > \Delta t_{\mathrm{pos}}$ | **Monotone & oscillation-free** |
 | **Steady-State Limit ($t \to \infty$)** | Exact (if stable) | Exact ($\mathbf{K}^{-1}\boldsymbol{F}$) | **Exact ($\mathbf{K}^{-1}\boldsymbol{F}$)** | **Exact ($\mathbf{K}^{-1}\boldsymbol{F}$)** |
 
-### B. Nonlinear Solvers for Unsaturated Richards & Seepage Flow
+### B. Nonlinear Solvers for Steady and Transient Unsaturated Seepage
 
-| Feature / Metric | Standard Picard ($h$-based) | Modified Picard (Celia et al., 1990) | Newton-Raphson | Gauss-Quadrature Picard FEM (XSLOPE) |
+| Feature / Metric | Standard Picard ($h$-based) | Modified Picard (Celia et al., 1990) | Newton-Raphson | Mixed Chord-Lumped $\theta$-FEM (XSLOPE) |
 |---|---|---|---|---|
-| **Governing Equation** | Richards ($h$-form) | Richards (Mixed $\theta - h$) | Richards (Mixed or $h$) | Steady Unconfined Seepage |
-| **Mass Balance Conservation** | Poor ($> 20\%$ error) | **Exact to machine precision** | Exact (in mixed form) | Enforced via Flow Closure ($< 0.1\%$) |
-| **Required Derivatives** | $K(h), \, C(h)$ | $K(h), \, C(h), \, \theta(h)$ | $K, C, \frac{dK}{dh}, \frac{dC}{dh}$ (Hessians) | $k_r(\psi)$ at Gauss points |
+| **Governing Equation** | Richards ($h$-form) | Richards (Mixed $\theta - h$) | Richards (Mixed or $h$) | Steady & Transient Unconfined ($\Delta W$) |
+| **Mass Balance Conservation** | Poor ($> 20\%$ error) | **Exact to machine precision** | Exact (in mixed form) | **Exact sub-element $\Delta W$ conservation** |
+| **Storage Linearization** | Analytic tangent $C(h)$ | Analytic tangent $C(h)$ + $\theta$ residual | Full coupled Hessian $\frac{dC}{dh}, \frac{dK}{dh}$ | Diagonal HRZ lumped $\max(C_{\text{chord}}, C_{\text{tangent}})$ |
 | **System Matrix Symmetry (Weak Form)** | Symmetric positive definite | Symmetric positive definite | Asymmetric (coupled Jacobian) | Symmetric positive definite |
-| **Computational Cost / Iter.** | Very Low ($\mathcal{O}(N)$) | Very Low ($\mathcal{O}(N)$) | High | Low |
-| **Convergence Rate** | Linear | Linear | Quadratic (near root) | Linear with Adaptive Ladder |
-| **Dry Front Robustness** | Unstable | **High** | Poor (diverges on dry soils) | High ($k_{r,\min} = 10^{-8}$ floor) |
-| **Boundary Phase Changes** | Fixed | Fixed | Fixed | **Active Set (Seepage Face tracking)** |
+| **Computational Cost / Iter.** | Very Low ($\mathcal{O}(N)$) | Very Low ($\mathcal{O}(N)$) | High | Low (reused saturated stiffness) |
+| **Dry Front & Elliptic Guard** | Unstable | High | Poor (diverges on dry soils) | **High ($k_{r,\min} = 10^{-8}$, $S_{\text{floor}} = 10^{-4}$)** |
+| **Boundary Phase Changes** | Fixed | Fixed | Fixed | **Active Set + 3-State `reservoir` Hysteresis** |
 
 ---
 
-## 17. Synthesis and Implementation Recommendations for GFDFlow
+## 19. Synthesis and Implementation Recommendations for GFDFlow
 
-To combine spatial GFDM versatility with high-accuracy transient and unsaturated capabilities in **GFDFlow**:
+To combine spatial GFDM versatility with high-accuracy steady and transient unsaturated seepage capabilities in **`GFDFlow`**:
 
-1. **Use Crank-Nicolson ($\theta = \frac{1}{2}$) with Algebraic Boundary Enforcement for Linear Parabolic Flow**: Assemble $\mathbf{A}_{\mathrm{LHS}} = \mathbf{M} - \frac{\Delta t}{2}\mathbf{K}$ and $\mathbf{A}_{\mathrm{RHS}} = \mathbf{M} + \frac{\Delta t}{2}\mathbf{K}$ in `scipy.sparse` format, impose Dirichlet rows algebraically at $t^{n+1}$, and include $2\text{--}4$ Rannacher Backward-Euler startup half-steps whenever initial and boundary heads are discontinuous at $t = 0$.
-2. **Adopt Celia's Residual Formulation for Transient Unsaturated Flow**: Implement the Modified Picard Taylor expansion on $\theta$ with sparse `csr_matrix`/`csc_matrix` star stencils to guarantee machine-precision mass balance.
-3. **Incorporate Anisotropic Conductivity Tensors**: Generalize stencils to support rotated permeability tensors $[\mathbf{K}]$ using second-order cross-derivative coefficients ($E$ in $Lu$).
-4. **Enforce the $k_{r,\min} = 10^{-8}$ Guard**: Protect unsaturated conductivity evaluations from vanishing at high suctions to preserve non-singular GFDM star matrices.
-5. **Deploy Dynamic Active Sets for Seepage Faces**: Implement boundary reaction switching on downstream embankment slopes to resolve unknown atmospheric exit points automatically.
-6. **Utilize USDA Texture Parameter Libraries**: Leverage the Carsel & Parrish (1988) van Genuchten and Gardner reference tables for standardized benchmark verification.
+1. **Use Crank-Nicolson ($\theta = \frac{1}{2}$) with Algebraic Boundary Enforcement for Smooth Linear Parabolic Flow, and Backward Euler ($\theta = 1$) for Sharp Switching Fronts**: Assemble $\mathbf{A}_{\mathrm{LHS}} = \mathbf{M} - \theta \Delta t \mathbf{K}$ in `scipy.sparse` format, impose Dirichlet rows algebraically at $t^{n+1}$, use $2\text{--}4$ Rannacher Backward-Euler startup half-steps for Crank-Nicolson on impulsive initial data, and default to $\theta = 1$ when dynamic exit-face or reservoir boundaries switch state across steps.
+2. **Adopt Mass-Conservative Mixed Storage with Envelope Linearization**: Formulate transient unsaturated GFDM steps around exact nodal water increments $\Delta W_i = V_i (\Phi(\psi_i^{n+1}) - \Phi(\psi_i^n))$ (Celia's residual form) with strictly diagonal lumped control-volume weights $V_i > 0$ and Jacobian capacity $\tilde{C}_i = \max(C_{\text{chord}, i}, C_{\text{tangent}, i})$.
+3. **Separate Saturated $S_s$ and Unsaturated $S_y$ Storage Regimes with a $10^{-4}$ Residual Floor**: Apply elastic compressibility $S_s$ exclusively for $\psi \ge 0$ and drainage capacity ($S_y / |h_0|$ or $S_y dS_e/d\psi$) exclusively for $\psi < 0$, guarded by an unsaturated capacity floor $S_{\text{floor}} = 10^{-4} S_{\text{scale}}$ so dry GFDM stars never lose parabolic diagonal dominance during adaptive $\Delta t$ reduction.
+4. **Incorporate Anisotropic Conductivity Tensors and Subdomain-Restricted Interface Stars**: Combine rotated permeability tensors $[\mathbf{K}]$ (cross-derivative coefficient $E$ in $Lu$) with one-sided flux-continuous interface stencils (Section 7) to resolve $10\times\text{--}1000\times$ shell-core permeability contrasts without cross-interface smearing.
+5. **Enforce the $k_{r,\min} = 10^{-8}$ Guard**: Protect unsaturated conductivity evaluations from vanishing at high suctions to preserve non-singular GFDM star matrices.
+6. **Deploy Dynamic Active Sets and Three-State `reservoir` Tracking**: Track running pool maximum $h_{\max}(t)$ alongside $h(t)$ on reservoir boundaries so newly uncovered saturated slope nodes transition automatically from Dirichlet head to seepage-face candidates during drawdown, and pair adaptive $\Delta t$ error control (excluding Dirichlet jumps) with exact saved-frame schedule clamping.
+7. **Visualize Transient Frames via Darcy Velocity Vectors Rather than Stream Functions**: Compute velocity vectors $\mathbf{v} = -k_r(\psi)[\mathbf{K}]\nabla h$ via local GFDM gradient stencils on transient frames where $\nabla \cdot \mathbf{q} = -S \partial h / \partial t \neq 0$ invalidates stream-function flow nets, while tracking cumulative mass-balance closure.
 
 ---
 
-## 18. References
+## 20. References
 
 - **Benito, J. J., Ureña, F., & Gavete, L. (2001)**. *Influence of several factors in the generalized finite difference method*. Applied Mathematical Modelling, 25(12), 1039–1053.
 - **Benito, J. J., Ureña, F., & Gavete, L. (2007)**. *Solving parabolic and hyperbolic equations by the generalized finite difference method*. Journal of Computational and Applied Mathematics, 209(2), 208–233.
@@ -1104,8 +1383,10 @@ To combine spatial GFDM versatility with high-accuracy transient and unsaturated
 - **Crank, J., & Nicolson, P. (1947)**. *A practical method for numerical evaluation of solutions of partial differential equations of the heat-conduction type*. Mathematical Proceedings of the Cambridge Philosophical Society, 43(1), 50–67.
 - **Dahlquist, G. (1963)**. *A special stability problem for linear multistep methods*. BIT Numerical Mathematics, 3(1), 27–43.
 - **Ehle, B. L. (1969)**. *On Padé approximations to the exponential function and A-stable methods for the numerical solution of initial value problems*. Research Report CSRR 2010, University of Waterloo.
+- **Freeze, R. A., & Cherry, J. A. (1979)**. *Groundwater*. Prentice-Hall, Englewood Cliffs, NJ.
 - **Gardner, W. R. (1958)**. *Some steady-state solutions of the unsaturated moisture flow equation with application to evaporation from a water table*. Soil Science, 85(4), 228–232.
 - **Hairer, E., & Wanner, G. (1996)**. *Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems* (2nd ed.). Springer.
+- **Hinton, E., Rock, T., & Zienkiewicz, O. C. (1976)**. *A note on mass lumping and related processes in the finite element method*. Earthquake Engineering & Structural Dynamics, 4(3), 245–249.
 - **LeVeque, R. J. (2007)**. *Finite Difference Methods for Ordinary and Partial Differential Equations: Steady-State and Time-Dependent Problems*. SIAM.
 - **Liszka, T., & Orkisz, J. (1980)**. *The finite difference method at arbitrary irregular grids and its application in applied mechanics*. Computers & Structures, 11(1–2), 83–95.
 - **Mualem, Y. (1976)**. *A new model for predicting the hydraulic conductivity of unsaturated porous media*. Water Resources Research, 12(3), 513–522.
@@ -1117,4 +1398,6 @@ To combine spatial GFDM versatility with high-accuracy transient and unsaturated
 - **Strikwerda, J. C. (2004)**. *Finite Difference Schemes and Partial Differential Equations* (2nd ed.). SIAM.
 - **Tinoco-Guerrero, G., Domínguez-Mota, F. J., & Gaona-Arias, A. (2018)**. *Stability analysis of the generalized finite-difference method applied to the advection–diffusion equation*. Mathematics and Computers in Simulation, 147, 293–300.
 - **van Genuchten, M. Th. (1980)**. *A closed-form equation for predicting the hydraulic conductivity of unsaturated soils*. Soil Science Society of America Journal, 44(5), 892–898.
-- **XSLOPE Documentation (2026)**. *Finite element seepage analysis: Technical manual and theory reference*. Available at: `https://xslope.org/en/latest/seep/overview/`.
+- **XSLOPE Documentation (2026a)**. *Finite element seepage analysis: Technical manual and theory reference*. Available at: `https://xslope.org/en/latest/seep/overview/`.
+- **XSLOPE Documentation (2026b)**. *Transient seepage in XSLOPE: Formulation, storage properties, adaptive time-stepping, and boundary dynamics*. Available at: `https://xslope.org/en/latest/seep/transient/`.
+- **XSLOPE Documentation (2026c)**. *Sample problems — Seepage analysis (#2 Earth Dam with Core) and Tutorial SEEP-3 (Reservoir Drawdown)*. Available at: `https://xslope.org/en/latest/seep/samples/#2-earth-dam-with-core`.
