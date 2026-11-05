@@ -22,8 +22,7 @@ Boundary conditions:
 Outputs
 -------
 - Figures saved to `examples/paper/figures/`:
-  - `solution_contours.png`: Full contourf map with phreatic line.
-  - `solution_equipotential.png`: Equipotential isolines matching FigDam5CCompara2.
+  - `st_potential_solution_contours.png`: Full contourf map with phreatic line.
 """
 
 import json
@@ -235,7 +234,7 @@ def plot_and_save_results(
     ax1.grid(True, linestyle="--", alpha=0.5)
     ax1.axis("equal")
 
-    path1 = os.path.join(output_dir, "solution_contours.png")
+    path1 = os.path.join(output_dir, "st_potential_solution_contours.png")
     fig1.savefig(path1, dpi=300, bbox_inches="tight")
     print(f"Saved: {path1}")
 
