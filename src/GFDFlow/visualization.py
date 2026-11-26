@@ -711,6 +711,7 @@ def plot_phreatic_surface(
     density_g: float = 9.81,
     level: float = 0.0,
     color: str = "b",
+    linestyle: str = "-",
     linewidths: float = 2.0,
     label: Optional[str] = "Phreatic surface",
     **kwargs: Any,
@@ -748,17 +749,17 @@ def plot_phreatic_surface(
 
     if triangles is not None:
         cs = ax.tricontour(
-            x, y, triangles, pressure, levels=[level], colors=color, linewidths=linewidths, **kwargs
+            x, y, triangles, pressure, levels=[level], colors=color, linewidths=linewidths, linestyle=linestyle, **kwargs
         )
     else:
         cs = ax.tricontour(
-            x, y, pressure, levels=[level], colors=color, linewidths=linewidths, **kwargs
+            x, y, pressure, levels=[level], colors=color, linewidths=linewidths, linestyle=linestyle, **kwargs
         )
 
     if label:
         # Add proxy artist for legend support since ContourSet does not automatically show in legend
         from matplotlib.lines import Line2D
-        line_proxy = Line2D([0], [0], color=color, linewidth=linewidths, label=label)
+        line_proxy = Line2D([0], [0], color=color, linewidth=linewidths, linestyle=linestyle, label=label)
         handles, labels = ax.get_legend_handles_labels()
         handles.append(line_proxy)
         labels.append(label)

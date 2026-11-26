@@ -24,6 +24,14 @@ Outputs
 - JSON data: `examples/paper/mesh_data.json` (coordinates, triangles, normals,
   node groups, support stencils, and precomputed `M_pinv` matrices).
 - Diagnostic figures: `examples/paper/figures/{geometry,mesh,nodes,normal_vectors}.png`.
+
+References
+----------
+- Chávez-Negrete, C., Domínguez-Mota, F. J., & Román-Gutiérrez, R. (2023/2024).
+  "Interface formulation for generalized finite difference method for solving
+  groundwater flow." *Computers and Geotechnics*, Vol. 166, 105990.
+  DOI: 10.1016/j.compgeo.2023.105990 (indexed under 2023 in some databases
+  and published in Vol. 166 in 2024).
 """
 
 import calfem.geometry as cfg
