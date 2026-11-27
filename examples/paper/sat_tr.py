@@ -40,14 +40,14 @@ Inputs
 
 Outputs
 -------
-- ``examples/paper/figures/tr_sat_snapshots.png`` : Six-panel transient evolution
+- ``examples/paper/figures/sat_tr_snapshots.png`` : Six-panel transient evolution
   of total head contours, equipotentials, and phreatic surface (:math:`h = y`).
-- ``examples/paper/figures/tr_sat_phreatic_isochrones.png`` : Phreatic surface
+- ``examples/paper/figures/sat_tr_phreatic_isochrones.png`` : Phreatic surface
   isochrones across selected days compared against the steady-state baseline.
-- ``examples/paper/figures/tr_sat_convergence.png`` : Monitoring piezometer
+- ``examples/paper/figures/sat_tr_convergence.png`` : Monitoring piezometer
   locations, head time histories, and :math:`L_\\infty`/RMSE relaxation toward
   steady state.
-- ``examples/paper/figures/tr_sat.gif`` : Animated GIF of transient head and
+- ``examples/paper/figures/sat_tr.gif`` : Animated GIF of transient head and
   phreatic surface evolution from :math:`t = 0` to :math:`1000` days.
 
 References
@@ -249,7 +249,7 @@ for ax in axes_snap[:, 0]:
 cbar_snap = fig_snap.colorbar(tcf, ax=axes_snap, shrink=0.85, pad=0.02)
 cbar_snap.set_label("Total head $h$ (m)")
 fig_snap.suptitle("Transient Saturated Flow Evolution in Five-Layer Dam")
-fig_snap.savefig("examples/paper/figures/tr_sat_snapshots.png", dpi=300, bbox_inches="tight")
+fig_snap.savefig("examples/paper/figures/sat_tr_snapshots.png", dpi=300, bbox_inches="tight")
 
 # B. Isochrones of phreatic surface vs steady phreatic surface
 # ------------------------------------------------------------
@@ -306,7 +306,7 @@ ax_iso.set_title("Phreatic Surface Isochrones ($h = y$) vs. Steady State")
 ax_iso.legend(handles=iso_handles, loc="upper right", ncol=2, frameon=True)
 ax_iso.grid(True, linestyle="--", alpha=0.4)
 ax_iso.axis("equal")
-fig_iso.savefig("examples/paper/figures/tr_sat_phreatic_isochrones.png", dpi=300, bbox_inches="tight")
+fig_iso.savefig("examples/paper/figures/sat_tr_phreatic_isochrones.png", dpi=300, bbox_inches="tight")
 
 # C. Convergence
 # --------------
@@ -350,9 +350,9 @@ ax_err.grid(True, which="both", linestyle="--", alpha=0.4)
 ax_err.legend(loc="upper right", frameon=True)
 
 fig_conv.suptitle("Transient Saturated Flow: Piezometer Histories & Steady-State Convergence")
-fig_conv.savefig("examples/paper/figures/tr_sat_convergence.png", dpi=300, bbox_inches="tight")
+fig_conv.savefig("examples/paper/figures/sat_tr_convergence.png", dpi=300, bbox_inches="tight")
 
-# D. snapshots GIF into `tr_sat.gif`
+# D. snapshots GIF into `sat_tr.gif`
 # ----------------------------------
 from matplotlib.animation import FuncAnimation, PillowWriter
 
@@ -392,7 +392,7 @@ def update_frame(frame_idx: int) -> None:
 
 
 ani = FuncAnimation(fig_gif, update_frame, frames=len(gif_days), interval=100)
-ani.save("examples/paper/figures/tr_sat.gif", writer=PillowWriter(fps=10), dpi=150)
-print("Saved animation: examples/paper/figures/tr_sat.gif")
+ani.save("examples/paper/figures/sat_tr.gif", writer=PillowWriter(fps=10), dpi=150)
+print("Saved animation: examples/paper/figures/sat_tr.gif")
 
 plt.show()

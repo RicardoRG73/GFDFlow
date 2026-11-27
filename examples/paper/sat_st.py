@@ -38,7 +38,7 @@ Inputs
 
 Outputs
 -------
-- ``examples/paper/figures/st_sat.png`` : Total hydraulic head contour map,
+- ``examples/paper/figures/sat_st.png`` : Total hydraulic head contour map,
   equipotential isolines, and extracted phreatic surface (:math:`h = y`).
 
 References
@@ -213,5 +213,5 @@ ax1.set_title("Steady State Potential Flow in Five-Layer Dam")
 ax1.grid(True, linestyle="--", alpha=0.5)
 ax1.axis("equal")
 
-plt.savefig("examples/paper/figures/st_sat.png", dpi=300, bbox_inches="tight")
+plt.savefig("examples/paper/figures/sat_st.png", dpi=300, bbox_inches="tight")
 plt.show()
